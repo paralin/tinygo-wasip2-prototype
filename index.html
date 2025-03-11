@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TinyGo WASI Preview2 Demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>TinyGo WASI Preview2 Demo</h1>
+  <p>Check the console for output from the WebAssembly module</p>
+  <pre id="output"></pre>
+  <script>
+    // Capture console output and display it on page
+    const originalConsoleLog = console.log;
+    console.log = function() {
+      const output = document.getElementById('output');
+      for (let i = 0; i < arguments.length; i++) {
+        const arg = arguments[i];
+        if (typeof arg === 'object') {
+          output.textContent += JSON.stringify(arg, null, 2) + '\n';
+        } else {
+          output.textContent += arg + '\n';
+        }
+      }
+      originalConsoleLog.apply(console, arguments);
+    };
+  </script>
+  <script type="module" src="dist/bundle.js"></script>
+</body>
+</html>

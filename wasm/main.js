@@ -17,8 +17,14 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
   let _fs;
   async function fetchCompile (url) {
     if (isNode) {
-      _fs = _fs || await import('node:fs/promises');
-      return WebAssembly.compile(await _fs.readFile(url));
+      try {
+        _fs = _fs || await import('node:fs/promises');
+        return WebAssembly.compile(await _fs.readFile(url));
+      } catch (e) {
+        // Fall back to fetch if node:fs/promises import fails
+        console.warn("Failed to import node:fs/promises, falling back to fetch", e);
+        return fetch(url).then(WebAssembly.compileStreaming);
+      }
     }
     return fetch(url).then(WebAssembly.compileStreaming);
   }
