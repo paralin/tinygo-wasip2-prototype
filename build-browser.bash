@@ -63,5 +63,3 @@ esbuild main.ts \
   --serve=:8000 \
   --servedir=. \
   --define:process.versions='{}'
-
-# Note: The server will continue running until Ctrl+C is pressed
