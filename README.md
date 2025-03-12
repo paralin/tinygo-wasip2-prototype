@@ -1,15 +1,17 @@
-*** DONE explore: wasip2 in tinygo
-<2025-03-12 Wed>
+# TinyGo WebAssembly with WASI Preview2
 
 A simple prototype demonstrating how to compile Go code to WebAssembly using TinyGo with WASI Preview2 support and run it in a browser environment.
 
-Replicating this prototype from scratch:
+## Replicating this prototype from scratch:
 
 1. Install the required tools:
+   ```bash
    brew install wasm-tools tinygo
    npm install -g @bytecodealliance/jco
+   ```
 
 2. Create a simple Go program (main.go):
+   ```go
    package main
    
    import "fmt"
@@ -17,22 +19,30 @@ Replicating this prototype from scratch:
    func main() {
        fmt.Println("Hello from TinyGo WebAssembly with WASI Preview2!")
    }
+   ```
 
 3. Compile the Go code to WebAssembly:
+   ```bash
    GOOS=wasip2 GOARCH=wasm tinygo build -o main.wasm main.go
+   ```
 
 4. Test the WASM file with wasmtime (optional):
+   ```bash
    wasmtime main.wasm
+   ```
 
 5. Transpile the WASM module to JavaScript:
+   ```bash
    jco transpile main.wasm --out-dir ./wasm/ --instantiation
+   ```
 
 6. Set up the JavaScript/browser environment:
-   - Initialize npm/yarn: npm init -y
-   - Add required dependencies: yarn add @bytecodealliance/preview2-shim
-   - Add dev dependencies: yarn add -D typescript vite
+   - Initialize npm/yarn: `npm init -y`
+   - Add required dependencies: `yarn add @bytecodealliance/preview2-shim`
+   - Add dev dependencies: `yarn add -D typescript vite`
 
 7. Create a TypeScript file (main.ts) to load the WASM module:
+   ```typescript
    import { instantiate } from './wasm/main.js';
    import { createStdout, createStderr, createStdin } from '@bytecodealliance/preview2-shim/cli';
    import { stdinDefault } from '@bytecodealliance/preview2-shim/cli/stdin';
@@ -70,8 +80,10 @@ Replicating this prototype from scratch:
    }
 
    run().catch(e => console.error("Error running WASM:", e));
+   ```
 
 8. Create HTML file (index.html) for browser execution:
+   ```html
    <!DOCTYPE html>
    <html>
    <head>
@@ -104,8 +116,10 @@ Replicating this prototype from scratch:
      <script type="module" src="dist/bundle.js"></script>
    </body>
    </html>
+   ```
 
 9. Build and serve with esbuild:
+   ```bash
    # Install esbuild if not already installed
    npm install -g esbuild
    
@@ -126,5 +140,6 @@ Replicating this prototype from scratch:
      --serve=:8000 \
      --servedir=. \
      --define:process.versions='{}'
+   ```
 
 This prototype demonstrates bridging Go and WebAssembly with WASI Preview2, allowing Go code to run in browser environments with access to system interfaces like stdout through the WebAssembly System Interface standard.
