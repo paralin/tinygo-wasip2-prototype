@@ -82,3 +82,18 @@ asynchronously from a call from wasm => javascript I guess the only way to make
 this work is to force all the calls out of Go to be synchronous in nature and
 handle the async with a callback calling into the Go runtime from outside of
 wasm when the promise resolves. (Is this even possible?)
+
+### Blocking I/O
+
+There is actually a way to block JavaScript in the web browser; we can use
+[Atomics.wait] with a SharedArrayBuffer to block the JS thread. This is
+supported in all major browsers but requires [secure context] and [cross-origin
+isolated] headers. This would require two coopoerating Worker where one Worker
+sets up the JavaScript async Promise callbacks and the other (wasm) uses
+Atomics.wait to block the wasm function call until the Promise resolves.
+
+[Atomics.wait]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
+[SharedArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
+[secure context]: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
+[cross-origin isolated]: https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated
+
