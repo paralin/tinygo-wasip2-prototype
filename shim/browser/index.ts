@@ -1,7 +1,8 @@
 import * as wasip2Shim from "@bytecodealliance/preview2-shim";
-import { PollableShim } from "./poll.js";
+import { monotonicClock, wallClock } from "./clocks.js";
+import { Pollable } from "./poll.js";
 
-// the types are all wrong, so let's just use any here.
+// The types are all wrong, so let's just use any here.
 const wasip2Raw = wasip2Shim as any;
 
 // Create correct imports structure matching what the wasm expects
@@ -10,12 +11,14 @@ export const wasip2 = {
   "wasi:cli/stderr": wasip2Raw.cli.stderr,
   "wasi:cli/stdin": wasip2Raw.cli.stdin,
   "wasi:cli/stdout": wasip2Raw.cli.stdout,
-  "wasi:clocks/monotonic-clock": wasip2Raw.clocks.monotonicClock,
-  "wasi:clocks/wall-clock": wasip2Raw.clocks.wallClock,
   "wasi:filesystem/preopens": wasip2Raw.filesystem.preopens,
   "wasi:filesystem/types": wasip2Raw.filesystem.types,
   "wasi:io/error": wasip2Raw.io.error,
   "wasi:io/streams": wasip2Raw.io.streams,
   "wasi:random/random": wasip2Raw.random.random,
-  "wasi:io/poll": {Pollable: PollableShim},
+  "wasi:io/poll": { Pollable },
+  
+  // Use our custom clock implementations with Atomics.wait support
+  "wasi:clocks/monotonic-clock": monotonicClock,
+  "wasi:clocks/wall-clock": wallClock,
 };

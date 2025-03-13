@@ -2,3 +2,4 @@ tinygo-demo*
 main.wasm
 node_modules
 *.wasm
+dist

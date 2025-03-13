@@ -6,10 +6,11 @@ import (
 )
 
 func main() {
-	os.Stdout.WriteString("Hello world from tinygo\n")
+	os.Stdout.WriteString("Hello world from tinygo with Atomics.wait-based time.Sleep\n")
 
 	for {
+		os.Stdout.WriteString("Before sleep: " + time.Now().String() + "\n")
 		time.Sleep(time.Second)
-		os.Stdout.WriteString(time.Now().String() + "\n")
+		os.Stdout.WriteString("After sleep: " + time.Now().String() + "\n")
 	}
 }

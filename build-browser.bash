@@ -7,46 +7,71 @@ if ! command -v esbuild &> /dev/null; then
   npm install -g esbuild
 fi
 
-# Build a simple HTML file to load our script
-cat > index.html << EOF
-<!DOCTYPE html>
-<html>
-<head>
-  <title>TinyGo WASI Preview2 Demo</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; }
-  </style>
-</head>
-<body>
-  <h1>TinyGo WASI Preview2 Demo</h1>
-  <p>Check the console for output from the WebAssembly module</p>
-  <pre id="output"></pre>
-  <script>
-    // Capture console output and display it on page
-    const originalConsoleLog = console.log;
-    console.log = function() {
-      const output = document.getElementById('output');
-      for (let i = 0; i < arguments.length; i++) {
-        const arg = arguments[i];
-        if (typeof arg === 'object') {
-          output.textContent += JSON.stringify(arg, null, 2) + '\n';
-        } else {
-          output.textContent += arg + '\n';
-        }
-      }
-      originalConsoleLog.apply(console, arguments);
-    };
-  </script>
-  <script type="module" src="dist/bundle.js"></script>
-</body>
-</html>
-EOF
+# Note: We're no longer generating the index.html file since we've manually created it
 
 # Create a dist directory if it doesn't exist
 mkdir -p dist
 
-echo "Building and serving with esbuild..."
+# Copy the wasm directory to dist for easier access
+echo "Copying wasm directory to dist..."
+cp -r wasm dist/
+
+# Create a custom HTTP server that sets the required cross-origin isolation headers
+cat > serve-with-headers.js << EOF
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = 8000;
+
+const server = http.createServer((req, res) => {
+  // Set COOP/COEP headers for cross-origin isolation (required for SharedArrayBuffer)
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+
+  // Simple routing
+  let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+  
+  // Handle 404 for non-existent files
+  if (!fs.existsSync(filePath)) {
+    res.statusCode = 404;
+    res.end('File not found');
+    return;
+  }
+
+  // Set content type based on file extension
+  const ext = path.extname(filePath);
+  let contentType = 'text/html';
+  
+  switch (ext) {
+    case '.js':
+      contentType = 'text/javascript';
+      break;
+    case '.css':
+      contentType = 'text/css';
+      break;
+    case '.json':
+      contentType = 'application/json';
+      break;
+    case '.wasm':
+      contentType = 'application/wasm';
+      break;
+  }
+  
+  res.setHeader('Content-Type', contentType);
+  
+  // Stream the file
+  const stream = fs.createReadStream(filePath);
+  stream.pipe(res);
+});
+
+server.listen(PORT, () => {
+  console.log(\`Server running at http://localhost:\${PORT}/\`);
+  console.log(\`IMPORTANT: Cross-Origin Isolation headers are enabled for SharedArrayBuffer support\`);
+});
+EOF
+
+echo "Building main bundle with esbuild..."
 esbuild main.ts \
   --bundle \
   --outfile=dist/bundle.js \
@@ -61,6 +86,24 @@ esbuild main.ts \
   --loader:.core4.wasm=file \
   --asset-names=[name]-[hash] \
   --public-path=/dist \
-  --serve=:8000 \
-  --servedir=. \
   --define:process.versions='{}'
+
+echo "Building worker bundle with esbuild..."
+esbuild shim/browser/worker.ts \
+  --bundle \
+  --outfile=dist/worker.js \
+  --format=esm \
+  --platform=browser \
+  --sourcemap \
+  --tree-shaking=true \
+  --loader:.wasm=file \
+  --loader:.core.wasm=file \
+  --loader:.core2.wasm=file \
+  --loader:.core3.wasm=file \
+  --loader:.core4.wasm=file \
+  --asset-names=[name]-[hash] \
+  --public-path=/dist \
+  --define:process.versions='{}'
+
+echo "Starting server with COOP/COEP headers for cross-origin isolation..."
+node serve-with-headers.js
