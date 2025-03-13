@@ -1,145 +1,66 @@
 # TinyGo WebAssembly with WASI Preview2
 
-A simple prototype demonstrating how to compile Go code to WebAssembly using TinyGo with WASI Preview2 support and run it in a browser environment.
+This repository contains a demonstration of running Go code in a browser using WebAssembly with WASI Preview2 support via TinyGo.
 
-## Replicating this prototype from scratch:
+## Repository Contents
 
-1. Install the required tools:
-   ```bash
-   brew install wasm-tools tinygo
-   npm install -g @bytecodealliance/jco
-   ```
+- **main.go**: A simple Go program that outputs a greeting message
+- **build scripts**:
+  - `build-go.bash`: Compiles the Go code to WebAssembly using TinyGo
+  - `build-js.bash`: Transpiles the WASM module to JavaScript using JCO
+  - `build-browser.bash`: Bundles and serves the web application
+  - `serve.bash`: Main script that runs all build steps and serves the demo
 
-2. Create a simple Go program (main.go):
-   ```go
-   package main
-   
-   import "fmt"
-   
-   func main() {
-       fmt.Println("Hello from TinyGo WebAssembly with WASI Preview2!")
-   }
-   ```
+- **Web files**:
+  - `index.html`: Browser interface for the demo
+  - `main.ts`: TypeScript code that loads and runs the WASM module
 
-3. Compile the Go code to WebAssembly:
-   ```bash
-   GOOS=wasip2 GOARCH=wasm tinygo build -o main.wasm main.go
-   ```
+## Prerequisites
 
-4. Test the WASM file with wasmtime (optional):
-   ```bash
-   wasmtime main.wasm
-   ```
+- TinyGo
+- wasm-tools
+- @bytecodealliance/jco (Node.js package)
+- esbuild
 
-5. Transpile the WASM module to JavaScript:
-   ```bash
-   jco transpile main.wasm --out-dir ./wasm/ --instantiation
-   ```
+## Running the Demo
 
-6. Set up the JavaScript/browser environment:
-   - Initialize npm/yarn: `npm init -y`
-   - Add required dependencies: `yarn add @bytecodealliance/preview2-shim`
-   - Add dev dependencies: `yarn add -D typescript vite`
+To build and run the demo, simply execute:
 
-7. Create a TypeScript file (main.ts) to load the WASM module:
-   ```typescript
-   import { instantiate } from './wasm/main.js';
-   import { createStdout, createStderr, createStdin } from '@bytecodealliance/preview2-shim/cli';
-   import { stdinDefault } from '@bytecodealliance/preview2-shim/cli/stdin';
-   import { stdoutDefault } from '@bytecodealliance/preview2-shim/cli/stdout';
-   import { stderrDefault } from '@bytecodealliance/preview2-shim/cli/stderr';
-   import { monotonicClockDefault } from '@bytecodealliance/preview2-shim/clocks/monotonic-clock';
-   import { wallClockDefault } from '@bytecodealliance/preview2-shim/clocks/wall-clock';
-   import { environmentDefault, randomDefault } from '@bytecodealliance/preview2-shim';
+```bash
+./serve.bash
+```
 
-   // Create custom stdout for browser display
-   const consoleOutput = document.createElement('pre');
-   document.body.appendChild(consoleOutput);
-   const stdout = createStdout({
-     writeString(message) {
-       consoleOutput.textContent += message;
-       return Promise.resolve();
-     }
-   });
+This will:
+1. Compile the Go code to WebAssembly
+2. Transpile the WASM module to JavaScript
+3. Bundle the web application
+4. Start a local server (typically on port 8000)
 
-   async function run() {
-     const instance = await instantiate({
-       'wasi:cli/stderr': stderrDefault(),
-       'wasi:cli/stdin': stdinDefault(),
-       'wasi:cli/stdout': stdout,
-       'wasi:cli/environment': environmentDefault(),
-       'wasi:cli/exit': {},
-       'wasi:clocks/monotonic-clock': monotonicClockDefault(),
-       'wasi:clocks/wall-clock': wallClockDefault(),
-       'wasi:random/random': randomDefault(),
-       'wasi:io/error': {},
-       'wasi:filesystem/types': {},
-       'wasi:filesystem/preopens': {}
-     });
-     await instance.main();
-   }
+Open your browser to the displayed URL to see the demo in action.
 
-   run().catch(e => console.error("Error running WASM:", e));
-   ```
+## How It Works
 
-8. Create HTML file (index.html) for browser execution:
-   ```html
-   <!DOCTYPE html>
-   <html>
-   <head>
-     <title>TinyGo WASI Preview2 Demo</title>
-     <style>
-       body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-       pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; }
-     </style>
-   </head>
-   <body>
-     <h1>TinyGo WASI Preview2 Demo</h1>
-     <p>Check the console for output from the WebAssembly module</p>
-     <pre id="output"></pre>
-     <script>
-       // Capture console output and display it on page
-       const originalConsoleLog = console.log;
-       console.log = function() {
-         const output = document.getElementById('output');
-         for (let i = 0; i < arguments.length; i++) {
-           const arg = arguments[i];
-           if (typeof arg === 'object') {
-             output.textContent += JSON.stringify(arg, null, 2) + '\n';
-           } else {
-             output.textContent += arg + '\n';
-           }
-         }
-         originalConsoleLog.apply(console, arguments);
-       };
-     </script>
-     <script type="module" src="dist/bundle.js"></script>
-   </body>
-   </html>
-   ```
+This demo showcases how to bridge Go and WebAssembly with WASI Preview2, allowing Go code to run in browser environments with access to system interfaces like stdout through the WebAssembly System Interface standard.
 
-9. Build and serve with esbuild:
-   ```bash
-   # Install esbuild if not already installed
-   npm install -g esbuild
-   
-   # Bundle and serve
-   esbuild main.ts \
-     --bundle \
-     --outfile=dist/bundle.js \
-     --format=esm \
-     --platform=browser \
-     --sourcemap \
-     --loader:.wasm=file \
-     --loader:.core.wasm=file \
-     --loader:.core2.wasm=file \
-     --loader:.core3.wasm=file \
-     --loader:.core4.wasm=file \
-     --asset-names=[name]-[hash] \
-     --public-path=/dist \
-     --serve=:8000 \
-     --servedir=. \
-     --define:process.versions='{}'
-   ```
+The TypeScript code sets up the necessary WASI Preview2 interfaces (stdin, stdout, stderr, clocks, etc.) that the Go code expects, enabling seamless execution in the browser.
 
-This prototype demonstrates bridging Go and WebAssembly with WASI Preview2, allowing Go code to run in browser environments with access to system interfaces like stdout through the WebAssembly System Interface standard.
+
+## Active Challenges
+
+### Nonblocking I/O
+
+When we call "time.Sleep" in Go this results in calling monotonic-clock
+subscribeDuration which is currently stubbed in the wasip2 shim implementation
+from bytecodealliance. Even worse, this depends on block() in Pollable.
+
+Pollable is something from the host environment that the wasm code can wait for.
+It has a single function block() which is supposed to block until the event
+occurs, then return. The problem is that the JavaScript environment in the web
+browser doesn't have blocking within a function call, it must return right away.
+We can't block returning from block().
+
+One option to fix this is to transform blocking I/O calls into async calls. jco
+supports this experimentally with the `--async-mode jspi` (JavaScript Promise
+Integration) flag. We then can set the poll function as async with
+`--async-imports wasi:io/poll#[method]pollable.block`
+

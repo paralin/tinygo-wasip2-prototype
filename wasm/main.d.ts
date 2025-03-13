@@ -8,6 +8,7 @@ import type * as WasiClocksWallClock from './interfaces/wasi-clocks-wall-clock.j
 import type * as WasiFilesystemPreopens from './interfaces/wasi-filesystem-preopens.js'; // wasi:filesystem/preopens@0.2.0
 import type * as WasiFilesystemTypes from './interfaces/wasi-filesystem-types.js'; // wasi:filesystem/types@0.2.0
 import type * as WasiIoError from './interfaces/wasi-io-error.js'; // wasi:io/error@0.2.0
+import type * as WasiIoPoll from './interfaces/wasi-io-poll.js'; // wasi:io/poll@0.2.0
 import type * as WasiIoStreams from './interfaces/wasi-io-streams.js'; // wasi:io/streams@0.2.0
 import type * as WasiRandomRandom from './interfaces/wasi-random-random.js'; // wasi:random/random@0.2.0
 import type * as WasiCliRun from './interfaces/wasi-cli-run.js'; // wasi:cli/run@0.2.0
@@ -21,6 +22,7 @@ export interface ImportObject {
   'wasi:filesystem/preopens@0.2.0': typeof WasiFilesystemPreopens,
   'wasi:filesystem/types@0.2.0': typeof WasiFilesystemTypes,
   'wasi:io/error@0.2.0': typeof WasiIoError,
+  'wasi:io/poll@0.2.0': typeof WasiIoPoll,
   'wasi:io/streams@0.2.0': typeof WasiIoStreams,
   'wasi:random/random@0.2.0': typeof WasiRandomRandom,
 }

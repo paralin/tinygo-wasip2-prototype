@@ -53,6 +53,7 @@ esbuild main.ts \
   --format=esm \
   --platform=browser \
   --sourcemap \
+  --tree-shaking=true \
   --loader:.wasm=file \
   --loader:.core.wasm=file \
   --loader:.core2.wasm=file \
