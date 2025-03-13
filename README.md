@@ -70,8 +70,9 @@ with an `await pollable.block()` inside.
 work. The problem is: **WebAssembly.Suspending** is not implemented in Chrome or
 Firefox as of 03/12/2025. It is currently in a [jspi origin trial] in Chrome,
 ending in July 2025, so this is an extremely bleeding edge feature that is not
-yet widely supported.
+yet widely supported. See [jspi proposal] for more details.
 
 [The announcement for jspi]: https://v8.dev/blog/jspi
 [the jspi spec]: https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md
 [jspi origin trial]: https://developer.chrome.com/origintrials/#/view_trial/1603844417297317889
+[jspi proposal]: https://github.com/WebAssembly/js-promise-integration
