@@ -117,7 +117,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     let captureCnt1 = 0;
     handleTables[1] = handleTable1;
     
-    const trampoline0 = new WebAssembly.Suspending(async function(arg0) {
+    function trampoline0(arg0) {
       var handle1 = arg0;
       var rep2 = handleTable1[(handle1 << 1) + 1] & ~T_FLAG;
       var rsc0 = captureTable1.get(rep2);
@@ -127,13 +127,13 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         Object.defineProperty(rsc0, symbolRscRep, { writable: true, value: rep2});
       }
       curResourceBorrows.push(rsc0);
-      await rsc0.block();
+      rsc0.block();
       for (const rsc of curResourceBorrows) {
         rsc[symbolRscHandle] = undefined;
       }
       curResourceBorrows = [];
     }
-    );
+    
     const handleTable3 = [T_FLAG, 0];
     const captureTable3= new Map();
     let captureCnt3 = 0;

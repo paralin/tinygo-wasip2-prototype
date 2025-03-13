@@ -62,5 +62,16 @@ We can't block returning from block().
 One option to fix this is to transform blocking I/O calls into async calls. jco
 supports this experimentally with the `--async-mode jspi` (JavaScript Promise
 Integration) flag. We then can set the poll function as async with
-`--async-imports wasi:io/poll#[method]pollable.block`
+`--async-imports wasi:io/poll#[method]pollable.block` - then we get something
+like `const trampoline0 = new WebAssembly.Suspending(async function(arg0) {`
+with an `await pollable.block()` inside.
 
+[The announcement for jspi] and [the jspi spec] describes how it is supposed to
+work. The problem is: **WebAssembly.Suspending** is not implemented in Chrome or
+Firefox as of 03/12/2025. It is currently in a [jspi origin trial] in Chrome,
+ending in July 2025, so this is an extremely bleeding edge feature that is not
+yet widely supported.
+
+[The announcement for jspi]: https://v8.dev/blog/jspi
+[the jspi spec]: https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md
+[jspi origin trial]: https://developer.chrome.com/origintrials/#/view_trial/1603844417297317889
