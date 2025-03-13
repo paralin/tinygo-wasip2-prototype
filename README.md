@@ -44,6 +44,15 @@ This demo showcases how to bridge Go and WebAssembly with WASI Preview2, allowin
 
 The TypeScript code sets up the necessary WASI Preview2 interfaces (stdin, stdout, stderr, clocks, etc.) that the Go code expects, enabling seamless execution in the browser.
 
+### Importing Wasi Functions
+
+Tinygo uses this construct internally to import functions from the "imports" structure:
+
+```go
+//go:wasmimport wasi:io/poll@0.2.0 [method]pollable.ready
+//go:noescape
+func wasmimport_PollableReady(self0 uint32) (result0 uint32)
+```
 
 ## Active Challenges
 
@@ -76,6 +85,20 @@ yet widely supported. See [jspi proposal] for more details.
 [the jspi spec]: https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md
 [jspi origin trial]: https://developer.chrome.com/origintrials/#/view_trial/1603844417297317889
 [jspi proposal]: https://github.com/WebAssembly/js-promise-integration
+
+The latest update on jspi can be found in the [extent to extend experiment]
+email on the Blink mailing list in which, as of January 29, 2025:
+
+> SPI has been inherently hard to specify, and validate security requirements
+> for given that it is somewhat sandwiched between JS & Wasm. Concretely, since
+> the last OT extension, the late breaking changes have been merged into the
+> specification and we've gotten more signals about the exploitable security
+> surface of JSPI (OT features are treated as shipped features for V8), and we'd
+> like to focus on hardening security ahead of an intent to ship.
+>
+> ~ Deepti Gandluri
+
+[extent to extend experiment]: https://groups.google.com/a/chromium.org/g/blink-dev/c/ke9rpIdSTwI/m/pq9PnNtCAAAJ
 
 Since jspi is not yet supported and there's apparently no way to return
 asynchronously from a call from wasm => javascript I guess the only way to make
