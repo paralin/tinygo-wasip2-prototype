@@ -7,7 +7,7 @@ console.log('[worker] Worker script started');
 // Message handler for receiving commands from the main thread
 self.onmessage = async (event) => {
   console.log('[worker] Received message:', event.data);
-  const { type, data } = event.data;
+  const { type } = event.data;
   
   if (type === 'init') {
     try {
@@ -18,32 +18,19 @@ self.onmessage = async (event) => {
         // In the worker context, the paths are relative to the worker.js location
         // We need to adjust the path to find the wasm files
         
-        // Try different paths to find the WASM file
-        const possiblePaths = [
-          `/wasm/${url}`,
-          `/dist/wasm/${url}`,
-          `../wasm/${url}`,
-          `../../wasm/${url}`
-        ];
+        // Construct the path to the WASM file
+        const path = `/wasm/${url}`;
+        const resolvedUrl = new URL(path, self.location.href).href;
         
-        let source;
-        for (const path of possiblePaths) {
-          try {
-            const resolvedUrl = new URL(path, self.location.href).href;
-            console.log(`[worker] Trying to fetch WASM from: ${resolvedUrl}`);
-            source = await fetch(resolvedUrl);
-            if (source.ok) {
-              console.log(`[worker] Successfully loaded WASM from: ${resolvedUrl}`);
-              break;
-            }
-          } catch (e) {
-            console.log(`[worker] Failed to fetch from ${path}:`, e);
-          }
+        console.log(`[worker] Trying to fetch WASM from: ${resolvedUrl}`);
+        const source = await fetch(resolvedUrl);
+        
+        if (!source.ok) {
+          console.log(`[worker] Failed to fetch from ${path}`);
+          throw new Error(`Failed to load WebAssembly module from ${path}`);
         }
         
-        if (!source || !source.ok) {
-          throw new Error(`Failed to load WebAssembly module from any path`);
-        }
+        console.log(`[worker] Successfully loaded WASM from: ${resolvedUrl}`);
         
         return WebAssembly.compileStreaming(source);
       };
@@ -61,28 +48,8 @@ self.onmessage = async (event) => {
       console.error("[worker] Failed to instantiate WebAssembly module:", error);
       self.postMessage({ type: 'error', error: error.toString() });
     }
-  } else if (type === 'operation-complete') {
-    // When an operation is complete, notify the waiting Atomics
-    const { buffer, index, result } = data;
-    const sharedArray = new Int32Array(buffer);
-    
-    // Store any result data in a global map that can be retrieved after waking up
-    if (result !== undefined) {
-      // The worker can store results for different operations
-      self.postMessage({ type: 'operation-result', id: index, result });
-    }
-    
-    // Set the value to 1 and notify any waiting threads
-    Atomics.store(sharedArray, index, 1);
-    Atomics.notify(sharedArray, index);
-    
-    console.log(`[worker] Notified waiting thread for operation at index ${index}`);
   }
 };
-
-// Initialize global SharedArrayBuffer for temporary operations
-// This ensures it's available in the global scope for the Pollable.block method
-(self as any).sharedArray = new Int32Array(new SharedArrayBuffer(4));
 
 // Notify the main thread that the worker is initialized
 self.postMessage({ type: 'initialized' });

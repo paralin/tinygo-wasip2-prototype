@@ -29,7 +29,7 @@ export const monotonicClock = {
     const durationMs = Number(BigInt(duration) / BigInt(1_000_000));
     console.log(`[monotonic-clock] subscribeDuration called with ${durationMs}ms`);
 
-    // Create a Pollable that will block for the specified duration
+    // Create a Pollable that will block for the specified duration using Atomics.wait
     return new Pollable('timer', { durationMs });
   }
 };

@@ -120,16 +120,15 @@ Atomics.wait to block the wasm function call until the Promise resolves.
 [secure context]: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
 [cross-origin isolated]: https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated
 
-## WebWorker with Atomics.wait Implementation
+## Simplified Atomics.wait Implementation
 
-This branch contains an advanced implementation of the Atomics.wait approach for synchronous blocking in the browser using a WebWorker architecture:
+This branch contains a simplified implementation of the Atomics.wait approach for synchronous blocking in the browser:
 
 1. **WebWorker Execution**: The WASM module runs in a dedicated WebWorker thread, leaving the main thread responsive
 2. **WASI Preview2 Compliance**: We've implemented the missing parts of the WASI Preview2 interfaces for clocks and polling
 3. **Proper Interface Chain**: Our implementation follows the proper call chain from time.Sleep through WASI interfaces
 4. **Synchronous Blocking**: Uses SharedArrayBuffer and Atomics.wait to provide true synchronous blocking
-5. **Cross-thread Communication**: Uses postMessage for communication between main thread and worker
-6. **Cross-origin Isolation**: The server is configured with required COOP/COEP headers for SharedArrayBuffer support
+5. **Cross-origin Isolation**: The server is configured with required COOP/COEP headers for SharedArrayBuffer support
 
 This implementation allows standard Go code using `time.Sleep` to work without modification by implementing the underlying WASI interfaces that TinyGo uses.
 
@@ -138,7 +137,7 @@ This implementation allows standard Go code using `time.Sleep` to work without m
 - `main.ts`: Sets up the main thread that creates the WebWorker
 - `shim/browser/worker.ts`: WebWorker that loads and runs the WASM module
 - `shim/browser/clocks.ts`: Implements the monotonic-clock interface with `subscribeDuration` that returns a Pollable
-- `shim/browser/poll.ts`: Implements the Pollable interface with a `block()` method using Atomics.wait
+- `shim/browser/poll.ts`: Implements the Pollable interface with a `block()` method using Atomics.wait with timeout
 - `build-browser.bash`: Sets up a server with appropriate headers for cross-origin isolation
 
 ### Implementation Flow
@@ -149,15 +148,6 @@ This implementation allows standard Go code using `time.Sleep` to work without m
 4. TinyGo runtime calls WASI's `monotonic-clock.subscribeDuration(duration)`
 5. Our shim returns a Pollable object
 6. TinyGo runtime calls `pollable.block()` on that object
-7. The worker thread sends a message to the main thread with the operation details and a SharedArrayBuffer
-8. The main thread handles the timer operation asynchronously
-9. Meanwhile, the worker thread blocks synchronously using Atomics.wait on the SharedArrayBuffer
-10. When the operation completes, the main thread notifies the worker by setting a value in the SharedArrayBuffer
-11. The worker wakes up from Atomics.wait and continues execution
-
-This architecture provides several benefits:
-- The main thread remains responsive during blocking operations
-- True synchronous blocking is achieved in the worker thread
-- The application follows standard WASI interfaces
-- Complex operations can be handled asynchronously by the main thread while appearing synchronous to the WASM code
-
+7. The Pollable's block method uses Atomics.wait with a timeout set to the desired duration
+8. The worker thread blocks synchronously until Atomics.wait times out after the specified duration
+9. Execution continues after the timeout
