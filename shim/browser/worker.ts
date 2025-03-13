@@ -80,5 +80,9 @@ self.onmessage = async (event) => {
   }
 };
 
+// Initialize global SharedArrayBuffer for temporary operations
+// This ensures it's available in the global scope for the Pollable.block method
+(self as any).sharedArray = new Int32Array(new SharedArrayBuffer(4));
+
 // Notify the main thread that the worker is initialized
 self.postMessage({ type: 'initialized' });
