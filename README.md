@@ -76,3 +76,9 @@ yet widely supported. See [jspi proposal] for more details.
 [the jspi spec]: https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md
 [jspi origin trial]: https://developer.chrome.com/origintrials/#/view_trial/1603844417297317889
 [jspi proposal]: https://github.com/WebAssembly/js-promise-integration
+
+Since jspi is not yet supported and there's apparently no way to return
+asynchronously from a call from wasm => javascript I guess the only way to make
+this work is to force all the calls out of Go to be synchronous in nature and
+handle the async with a callback calling into the Go runtime from outside of
+wasm when the promise resolves. (Is this even possible?)
