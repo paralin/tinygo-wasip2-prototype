@@ -30,4 +30,11 @@ func main() {
 	if err := writeTestFile("test.js", envValue); err != nil {
 		panic(err)
 	}
+
+	data, err := readTestFile("test.js")
+	if err != nil {
+		panic(err)
+	}
+
+	os.Stdout.WriteString("Successfully wrote and read file: " + string(data) + "\n")
 }
