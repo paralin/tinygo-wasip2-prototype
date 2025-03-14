@@ -5,18 +5,20 @@
 /**
  * Error class that represents a WASI IO error
  */
-export class Error {
-  private message: string
+export class Error extends globalThis.Error {
+  payload: string;
 
   constructor(message: string) {
-    this.message = message
+    super(message);
+    this.name = 'WasiIOError';
+    this.payload = message;
   }
 
   /**
    * Get a debug string representation of the error
    */
   toDebugString(): string {
-    return this.message
+    return this.message;
   }
 }
 

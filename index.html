@@ -1,101 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <title>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-    pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto; max-height: 300px; }
-    .status { margin: 20px 0; padding: 10px; background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 4px; }
-    .error { background: #fff2f0; border: 1px solid #ffccc7; }
-    .success { background: #f6ffed; border: 1px solid #b7eb8f; }
-    .warning { background: #fffbe6; border: 1px solid #ffe58f; }
-  </style>
-</head>
-<body>
-  <h1>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</h1>
-  
-  <div id="about">
-    <h2>About This Demo</h2>
-    <p>This demo shows how to implement synchronous blocking operations in WebAssembly running in a browser.</p>
-    <p>Key features:</p>
-    <ul>
-      <li>WebAssembly module compiled with TinyGo</li>
-      <li>WASI Preview2 interfaces implementation</li>
-      <li>WebWorker for running the WASM code</li>
-      <li>Simple Atomics.wait timeout for synchronous sleeping</li>
-    </ul>
-  </div>
-  
-  <div id="status-container" class="status">
-    <h2>Status</h2>
-    <p>Initializing application...</p>
-  </div>
-  
-  <h2>Console Output</h2>
-  <pre id="output"></pre>
-  
-  <script>
-    // Capture console output and display it on page
-    const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    
-    console.log = function() {
-      appendToOutput('[LOG]', arguments, 'log');
-      originalConsoleLog.apply(console, arguments);
-    };
-    
-    console.error = function() {
-      appendToOutput('[ERROR]', arguments, 'error');
-      originalConsoleError.apply(console, arguments);
-    };
-    
-    console.warn = function() {
-      appendToOutput('[WARN]', arguments, 'warn');
-      originalConsoleWarn.apply(console, arguments);
-    };
-    
-    function appendToOutput(prefix, args, type) {
-      const output = document.getElementById('output');
-      let line = prefix + ' ';
-      
-      for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
-        if (typeof arg === 'object') {
-          line += JSON.stringify(arg, null, 2) + ' ';
-        } else {
-          line += arg + ' ';
+  <head>
+    <title>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 4px;
+        overflow: auto;
+        max-height: 300px;
+      }
+      .status {
+        margin: 20px 0;
+        padding: 10px;
+        background: #e6f7ff;
+        border: 1px solid #91d5ff;
+        border-radius: 4px;
+      }
+      .error {
+        background: #fff2f0;
+        border: 1px solid #ffccc7;
+      }
+      .success {
+        background: #f6ffed;
+        border: 1px solid #b7eb8f;
+      }
+      .warning {
+        background: #fffbe6;
+        border: 1px solid #ffe58f;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</h1>
+
+    <div id="status-container" class="status">
+      <h2>Status</h2>
+      <p>Initializing application...</p>
+    </div>
+
+    <h2>Console Output</h2>
+    <pre id="output"></pre>
+
+    <div id="about">
+      <h2>About This Demo</h2>
+      <p>
+        This demo shows how to implement synchronous blocking operations in
+        WebAssembly running in a browser.
+      </p>
+      <p>Key features:</p>
+      <ul>
+        <li>WebAssembly module compiled with TinyGo</li>
+        <li>WASI Preview2 interfaces implementation</li>
+        <li>WebWorker for running the WASM code</li>
+        <li>Simple Atomics.wait timeout for synchronous sleeping</li>
+      </ul>
+    </div>
+
+    <script>
+      // Capture console output and display it on page
+      const originalConsoleLog = console.log
+      const originalConsoleError = console.error
+      const originalConsoleWarn = console.warn
+
+      console.log = function () {
+        appendToOutput('[LOG]', arguments, 'log')
+        originalConsoleLog.apply(console, arguments)
+      }
+
+      console.error = function () {
+        appendToOutput('[ERROR]', arguments, 'error')
+        originalConsoleError.apply(console, arguments)
+      }
+
+      console.warn = function () {
+        appendToOutput('[WARN]', arguments, 'warn')
+        originalConsoleWarn.apply(console, arguments)
+      }
+
+      function appendToOutput(prefix, args, type) {
+        const output = document.getElementById('output')
+        let line = prefix + ' '
+
+        for (let i = 0; i < args.length; i++) {
+          const arg = args[i]
+          if (typeof arg === 'object') {
+            line += JSON.stringify(arg, null, 2) + ' '
+          } else {
+            line += arg + ' '
+          }
+        }
+
+        const entry = document.createElement('div')
+        entry.classList.add(type)
+        entry.textContent = line
+        output.appendChild(entry)
+
+        // Auto-scroll to bottom
+        output.scrollTop = output.scrollHeight
+      }
+
+      // Update status function that can be called from the main.ts
+      window.updateStatus = function (message, type = 'info') {
+        const statusContainer = document.getElementById('status-container')
+        statusContainer.innerHTML = `<h2>Status</h2><p>${message}</p>`
+
+        // Remove all previous status classes
+        statusContainer.classList.remove('error', 'success', 'warning')
+
+        // Add appropriate class based on type
+        if (type === 'error') {
+          statusContainer.classList.add('error')
+        } else if (type === 'success') {
+          statusContainer.classList.add('success')
+        } else if (type === 'warning') {
+          statusContainer.classList.add('warning')
         }
       }
-      
-      const entry = document.createElement('div');
-      entry.classList.add(type);
-      entry.textContent = line;
-      output.appendChild(entry);
-      
-      // Auto-scroll to bottom
-      output.scrollTop = output.scrollHeight;
-    }
-    
-    // Update status function that can be called from the main.ts
-    window.updateStatus = function(message, type = 'info') {
-      const statusContainer = document.getElementById('status-container');
-      statusContainer.innerHTML = `<h2>Status</h2><p>${message}</p>`;
-      
-      // Remove all previous status classes
-      statusContainer.classList.remove('error', 'success', 'warning');
-      
-      // Add appropriate class based on type
-      if (type === 'error') {
-        statusContainer.classList.add('error');
-      } else if (type === 'success') {
-        statusContainer.classList.add('success');
-      } else if (type === 'warning') {
-        statusContainer.classList.add('warning');
-      }
-    };
-  </script>
-  
-  <script type="module" src="dist/bundle.js"></script>
-</body>
+    </script>
+
+    <script type="module" src="dist/bundle.js"></script>
+  </body>
 </html>

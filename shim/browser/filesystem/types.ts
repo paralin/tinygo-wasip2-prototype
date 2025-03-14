@@ -2,7 +2,6 @@
  * Implementation of wasi:filesystem/types@0.2.0 interface
  */
 
-import { InputStream, OutputStream } from '../io/streams.js'
 import type { Datetime } from '../clocks/wall-clock.js'
 
 /**
@@ -46,6 +45,26 @@ export type ErrorCode =
   | 'invalid-seek'
   | 'text-file-busy'
   | 'cross-device'
+
+/**
+ * Standard Error class with payload for WASI error codes
+ */
+export class FileSystemError extends Error {
+  payload: ErrorCode;
+
+  constructor(errorCode: ErrorCode) {
+    super(`FileSystem error: ${errorCode}`);
+    this.payload = errorCode;
+    this.name = 'FileSystemError';
+  }
+}
+
+/**
+ * Create a typed payload error for filesystem operations
+ */
+export function createError(errorCode: ErrorCode): never {
+  throw new FileSystemError(errorCode);
+}
 
 export type Filesize = bigint
 export type LinkCount = bigint
@@ -150,6 +169,7 @@ function getSourceData(fileEntry: FileEntry): Uint8Array {
 
 /**
  * Find an entry in the filesystem
+ * @returns The found entry or throws a FileSystemError
  */
 function getChildEntry(
   parentEntry: DirectoryEntryData,
@@ -157,7 +177,7 @@ function getChildEntry(
   openFlags: OpenFlags,
 ): DirectoryEntryData | FileEntry {
   if (!parentEntry || !parentEntry.dir) {
-    throw new Error('not-directory')
+    createError('not-directory')
   }
 
   // Special handling for current working directory
@@ -173,11 +193,11 @@ function getChildEntry(
 
   for (const segment of segments) {
     if (!entry || !(entry as DirectoryEntryData).dir) {
-      throw new Error('not-directory')
+      createError('not-directory')
     }
 
     if (segment === '..') {
-      throw new Error('no-entry')
+      createError('no-entry')
     }
 
     if (segment === '.') {
@@ -197,7 +217,7 @@ function getChildEntry(
     }
 
     if (!entry) {
-      throw new Error('no-entry')
+      createError('no-entry')
     }
   }
 
@@ -216,6 +236,10 @@ export class DirectoryEntryStream {
     this.entries = entries
   }
 
+  /**
+   * Read a directory entry
+   * @returns The next directory entry or undefined if no more entries
+   */
   readDirectoryEntry(): DirectoryEntry | undefined {
     if (this.index === this.entries.length) {
       return undefined
@@ -263,10 +287,11 @@ export class Descriptor {
 
   /**
    * Read from a file
+   * @returns [data, eof] tuple or throws a FileSystemError
    */
   read(length: Filesize, offset: Filesize): [Uint8Array, boolean] {
     if ((this.entry as DirectoryEntryData).dir) {
-      throw new Error('is-directory')
+      createError('is-directory')
     }
 
     const source = getSourceData(this.entry as FileEntry)
@@ -281,10 +306,11 @@ export class Descriptor {
 
   /**
    * Write to a file
+   * @returns The number of bytes written or throws a FileSystemError
    */
   write(buffer: Uint8Array, offset: Filesize): Filesize {
     if ((this.entry as DirectoryEntryData).dir) {
-      throw new Error('is-directory')
+      createError('is-directory')
     }
 
     const fileEntry = this.entry as FileEntry
@@ -310,12 +336,13 @@ export class Descriptor {
 
   /**
    * Read directory entries
+   * @returns DirectoryEntryStream or throws a FileSystemError
    */
   readDirectory(): DirectoryEntryStream {
     const dirEntry = this.entry as DirectoryEntryData
 
     if (!dirEntry.dir) {
-      throw new Error('bad-descriptor')
+      createError('bad-descriptor')
     }
 
     const entries = Object.entries(dirEntry.dir).sort(([a], [b]) =>
@@ -326,26 +353,28 @@ export class Descriptor {
 
   /**
    * Create a directory
+   * @returns void or throws a FileSystemError
    */
   createDirectoryAt(path: string): void {
     const dirEntry = this.entry as DirectoryEntryData
 
     if (!dirEntry.dir) {
-      throw new Error('not-directory')
+      createError('not-directory')
     }
 
     const entry = getChildEntry(dirEntry, path, {
       create: true,
       directory: true,
     })
-
+    
     if ((entry as FileEntry).source) {
-      throw new Error('exist')
+      createError('exist')
     }
   }
 
   /**
    * Get file stats
+   * @returns DescriptorStat or throws a FileSystemError
    */
   stat(): DescriptorStat {
     let type: DescriptorType = 'unknown'
@@ -371,16 +400,16 @@ export class Descriptor {
 
   /**
    * Get file stats for a path relative to this descriptor
+   * @returns The file stats or throws a FileSystemError
    */
   statAt(_pathFlags: PathFlags, path: string): DescriptorStat {
     const dirEntry = this.entry as DirectoryEntryData
 
     if (!dirEntry.dir) {
-      throw new Error('not-directory')
+      createError('not-directory')
     }
 
     const entry = getChildEntry(dirEntry, path, { create: false })
-
     let type: DescriptorType = 'unknown'
     let size: Filesize = BigInt(0)
 
@@ -404,18 +433,20 @@ export class Descriptor {
 
   /**
    * Create a link (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
   linkAt(
     _oldPathFlags: PathFlags,
     _oldPath: string,
     _newDescriptor: Descriptor,
     _newPath: string,
-  ): void {
-    throw new Error('unsupported')
+  ): never {
+    createError('unsupported')
   }
 
   /**
    * Open a file relative to this descriptor
+   * @returns The new Descriptor or throws a FileSystemError
    */
   openAt(
     _pathFlags: PathFlags,
@@ -426,50 +457,55 @@ export class Descriptor {
     const dirEntry = this.entry as DirectoryEntryData
 
     if (!dirEntry.dir) {
-      throw new Error('not-directory')
+      createError('not-directory')
     }
 
-    const childEntry = getChildEntry(dirEntry, path, openFlags)
-    return new Descriptor(childEntry)
+    const entry = getChildEntry(dirEntry, path, openFlags)
+    return new Descriptor(entry)
   }
 
   /**
    * Read a symbolic link (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
-  readlinkAt(_path: string): string {
-    throw new Error('unsupported')
+  readlinkAt(_path: string): never {
+    createError('unsupported')
   }
 
   /**
    * Remove a directory (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
-  removeDirectoryAt(_path: string): void {
-    throw new Error('unsupported')
+  removeDirectoryAt(_path: string): never {
+    createError('unsupported')
   }
 
   /**
    * Rename a file or directory (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
   renameAt(
     _oldPath: string,
     _newDescriptor: Descriptor,
     _newPath: string,
-  ): void {
-    throw new Error('unsupported')
+  ): never {
+    createError('unsupported')
   }
 
   /**
    * Create a symbolic link (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
-  symlinkAt(_oldPath: string, _newPath: string): void {
-    throw new Error('unsupported')
+  symlinkAt(_oldPath: string, _newPath: string): never {
+    createError('unsupported')
   }
 
   /**
    * Remove a file (not implemented)
+   * @returns Never returns, always throws a FileSystemError
    */
-  unlinkFileAt(_path: string): void {
-    throw new Error('unsupported')
+  unlinkFileAt(_path: string): never {
+    createError('unsupported')
   }
 }
 

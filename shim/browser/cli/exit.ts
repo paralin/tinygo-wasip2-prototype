@@ -25,16 +25,11 @@ export class ComponentExit extends Error {
 }
 
 /**
- * Exit status types
- */
-type ExitStatus = { tag: 'ok' } | { tag: 'err' }
-
-/**
  * Exit the component with a status
  * @param status Exit status (ok or err)
  */
-function exitWithStatus(status: ExitStatus): never {
-  throw new ComponentExit(status.tag === 'err' ? 1 : 0)
+function exitWithStatus(status: 'ok' | 'err'): never {
+  throw new ComponentExit(status === 'err' ? 1 : 0)
 }
 
 /**

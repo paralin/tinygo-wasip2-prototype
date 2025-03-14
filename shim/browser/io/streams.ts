@@ -11,11 +11,17 @@ import { Pollable } from './poll.js'
 const symbolDispose = Symbol.dispose || Symbol.for('dispose')
 
 /**
- * Stream error types
+ * Stream error class for closed streams
  */
-export type StreamError =
-  | { tag: 'last-operation-failed'; val: Error }
-  | { tag: 'closed' }
+export class StreamClosedError extends globalThis.Error {
+  payload: 'closed';
+  
+  constructor() {
+    super('Stream closed');
+    this.name = 'StreamClosedError';
+    this.payload = 'closed';
+  }
+}
 
 /**
  * Interface for input stream handlers
@@ -104,7 +110,7 @@ export class OutputStream {
    */
   blockingWriteAndFlush(contents: Uint8Array): void {
     if (!this.open) {
-      throw new Error('Stream closed')
+      throw new StreamClosedError()
     }
     this.handler.write(contents)
     this.blockingFlush()
@@ -115,7 +121,7 @@ export class OutputStream {
    */
   blockingFlush(): void {
     if (!this.open) {
-      throw new Error('Stream closed')
+      throw new StreamClosedError()
     }
     this.handler.blockingFlush()
   }
