@@ -89,7 +89,7 @@ esbuild main.ts \
   --define:process.versions='{}'
 
 echo "Building worker bundle with esbuild..."
-esbuild shim/browser/worker.ts \
+esbuild worker.ts \
   --bundle \
   --outfile=dist/worker.js \
   --format=esm \

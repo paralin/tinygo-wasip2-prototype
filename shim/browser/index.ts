@@ -1,24 +1,38 @@
-import { monotonicClock, wallClock } from "./clocks.js";
-import { Pollable } from "./poll.js";
-import * as cli from './cli.js'
-import * as filesystem from './filesystem.js'
-import * as io from './io.js'
-import * as random from './random.js'
+/**
+ * WASI Preview2 Browser Shim Implementation
+ *
+ * This module exports all WASI Preview2 interfaces implemented for browser environments.
+ * Each interface is implemented according to the specifications defined in wasm/interfaces/
+ */
 
-// Create correct imports structure matching what the wasm expects
+import { monotonicClock } from './clocks/monotonic-clock.js'
+import { wallClock } from './clocks/wall-clock.js'
+import { poll } from './io/poll.js'
+import {
+  environment,
+  stderr,
+  stdin,
+  stdout,
+} from './cli/index.js'
+import { preopens, types } from './filesystem/index.js'
+import { error, streams } from './io/index.js'
+import { random } from './random/index.js'
+
+/**
+ * Export all WASI Preview2 interfaces with their correct namespaces
+ * for WebAssembly component integration
+ */
 export const wasip2 = {
-  "wasi:cli/environment": cli.environment,
-  "wasi:cli/stderr": cli.stderr,
-  "wasi:cli/stdin": cli.stdin,
-  "wasi:cli/stdout": cli.stdout,
-  "wasi:filesystem/preopens": filesystem.preopens,
-  "wasi:filesystem/types": filesystem.types,
-  "wasi:io/error": io.error,
-  "wasi:io/streams": io.streams,
-  "wasi:random/random": random.random,
-  "wasi:io/poll": { Pollable },
-
-  // Use our custom clock implementations with Atomics.wait support
-  "wasi:clocks/monotonic-clock": monotonicClock,
-  "wasi:clocks/wall-clock": wallClock,
-};
+  'wasi:cli/environment': environment,
+  'wasi:cli/stderr': stderr,
+  'wasi:cli/stdin': stdin,
+  'wasi:cli/stdout': stdout,
+  'wasi:filesystem/preopens': preopens,
+  'wasi:filesystem/types': types,
+  'wasi:io/error': error,
+  'wasi:io/streams': streams,
+  'wasi:random/random': random,
+  'wasi:io/poll': poll,
+  'wasi:clocks/monotonic-clock': monotonicClock,
+  'wasi:clocks/wall-clock': wallClock,
+}
