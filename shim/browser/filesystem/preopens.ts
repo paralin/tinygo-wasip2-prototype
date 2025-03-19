@@ -3,6 +3,7 @@
  */
 
 import { Descriptor, setFileSystemData } from './types.js'
+import type * as wasip2Types from '../../types/index.js'
 
 // Initial empty filesystem
 const initialFileSystemData = { dir: {} }

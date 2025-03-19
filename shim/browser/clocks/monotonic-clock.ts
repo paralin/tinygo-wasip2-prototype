@@ -4,10 +4,11 @@
 
 import { createTimerPollable } from '../io/poll.js'
 import type { Pollable } from '../io/poll.js'
+import type * as wasip2Types from '../../types/index.js'
 
 // Type definitions from WASI interface
-export type Instant = bigint
-export type Duration = bigint
+export type Instant = wasip2Types.clocks.monotonicClock.Instant
+export type Duration = wasip2Types.clocks.monotonicClock.Duration
 
 /**
  * Convert nanoseconds to milliseconds
@@ -38,7 +39,33 @@ function subscribeDuration(when: Duration): Pollable {
   return createTimerPollable(durationMs)
 }
 
+/**
+ * Get the resolution of the monotonic clock
+ * @returns Duration in nanoseconds (10 microseconds in this implementation)
+ */
+function resolution(): Duration {
+  return BigInt(10_000) // 10 microseconds in nanoseconds
+}
+
+/**
+ * Subscribe to a specific instant of time
+ * @param when Instant to wait for
+ * @returns A Pollable that resolves at the specified time
+ */
+function subscribeInstant(when: Instant): Pollable {
+  const nowTime = now()
+  if (when <= nowTime) {
+    // Already passed, create immediate pollable
+    return createTimerPollable(0)
+  }
+  // Calculate duration to wait
+  const duration = when - nowTime
+  return subscribeDuration(duration)
+}
+
 export const monotonicClock = {
   now,
+  resolution,
   subscribeDuration,
+  subscribeInstant,
 }

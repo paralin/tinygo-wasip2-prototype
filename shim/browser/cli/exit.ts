@@ -5,6 +5,8 @@
  * but is used internally for error handling
  */
 
+import type * as wasip2Types from '../../types/index.js'
+
 /**
  * Custom error class for component exit conditions
  */

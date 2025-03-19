@@ -18,3 +18,7 @@ jco transpile \
 # Remove the node check
 sed -i -e "s#typeof process !== 'undefined' && process.versions && process.versions.node#false#g" ./wasm/main.js
 sed -i -e "s#|| await import('node:fs/promises')##g" ./wasm/main.js
+
+# Bring over the types
+rm -f ./shim/types/interfaces/*.d.ts || true
+cp ./dist/wasm/interfaces/*.d.ts ./shim/types/interfaces/

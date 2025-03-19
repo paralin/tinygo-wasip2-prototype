@@ -2,6 +2,8 @@
  * Implementation of wasi:cli/environment@0.2.0 interface
  */
 
+import type * as wasip2Types from '../../types/index.js'
+
 // Default environment values
 let environmentVariables: Array<[string, string]> = []
 let commandLineArgs: Array<string> = []

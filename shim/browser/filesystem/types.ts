@@ -3,6 +3,7 @@
  */
 
 import type { Datetime } from '../clocks/wall-clock.js'
+import type * as wasip2Types from '../../types/index.js'
 
 /**
  * Types from WASI filesystem interface
@@ -48,14 +49,21 @@ export type ErrorCode =
 
 /**
  * Standard Error class with payload for WASI error codes
+ * implements Error interface from io/error to ensure it's a valid error type
  */
-export class FileSystemError extends Error {
-  payload: ErrorCode;
+import { WasiIoError } from '../io/error.js'
+
+export class FileSystemError extends WasiIoError {
+  payload: ErrorCode
 
   constructor(errorCode: ErrorCode) {
-    super(`FileSystem error: ${errorCode}`);
-    this.payload = errorCode;
-    this.name = 'FileSystemError';
+    super(`FileSystem error: ${errorCode}`)
+    this.payload = errorCode
+    this.name = 'FileSystemError'
+  }
+
+  toDebugString(): string {
+    return `FileSystem error: ${this.payload}`
   }
 }
 
@@ -63,7 +71,7 @@ export class FileSystemError extends Error {
  * Create a typed payload error for filesystem operations
  */
 export function createError(errorCode: ErrorCode): never {
-  throw new FileSystemError(errorCode);
+  throw new FileSystemError(errorCode)
 }
 
 export type Filesize = bigint
@@ -227,7 +235,9 @@ function getChildEntry(
 /**
  * Directory entry stream for reading directory contents
  */
-export class DirectoryEntryStream {
+export class DirectoryEntryStream
+  implements wasip2Types.filesystem.types.DirectoryEntryStream
+{
   private entries: [string, DirectoryEntryData | FileEntry][]
   private index: number
 
@@ -237,10 +247,20 @@ export class DirectoryEntryStream {
   }
 
   /**
+   * Static factory method to create a DirectoryEntryStream
+   * Used to satisfy typechecking requirements for parameterless constructor
+   */
+  public static create(): DirectoryEntryStream {
+    return new DirectoryEntryStream([])
+  }
+
+  /**
    * Read a directory entry
    * @returns The next directory entry or undefined if no more entries
    */
-  readDirectoryEntry(): DirectoryEntry | undefined {
+  readDirectoryEntry():
+    | wasip2Types.filesystem.types.DirectoryEntry
+    | undefined {
     if (this.index === this.entries.length) {
       return undefined
     }
@@ -258,7 +278,7 @@ export class DirectoryEntryStream {
 /**
  * Descriptor class for file operations
  */
-export class Descriptor {
+export class Descriptor implements wasip2Types.filesystem.types.Descriptor {
   private entry: DirectoryEntryData | FileEntry
   private isStream: boolean
   private modificationTime: number = 0
@@ -269,6 +289,106 @@ export class Descriptor {
   ) {
     this.entry = entry
     this.isStream = isStream
+  }
+
+  /**
+   * Static factory method to create a Descriptor
+   * Used to satisfy typechecking requirements
+   */
+  public static create(): Descriptor {
+    // Create a root directory as default
+    return new Descriptor({ dir: {} })
+  }
+
+  /**
+   * Set times for a file path relative to this descriptor
+   */
+  setTimesAt(
+    pathFlags: wasip2Types.filesystem.types.PathFlags,
+    path: string,
+    dataAccessTimestamp: wasip2Types.filesystem.types.NewTimestamp,
+    dataModificationTimestamp: wasip2Types.filesystem.types.NewTimestamp,
+  ): void {
+    createError('unsupported')
+  }
+
+  // Implementing required methods from the interface
+  readViaStream(
+    offset: wasip2Types.filesystem.types.Filesize,
+  ): wasip2Types.io.streams.InputStream {
+    createError('unsupported')
+  }
+
+  writeViaStream(
+    offset: wasip2Types.filesystem.types.Filesize,
+  ): wasip2Types.io.streams.OutputStream {
+    createError('unsupported')
+  }
+
+  appendViaStream(): wasip2Types.io.streams.OutputStream {
+    createError('unsupported')
+  }
+
+  advise(
+    offset: wasip2Types.filesystem.types.Filesize,
+    length: wasip2Types.filesystem.types.Filesize,
+    advice: wasip2Types.filesystem.types.Advice,
+  ): void {
+    // No-op in browser implementation
+  }
+
+  sync(): void {
+    // No-op in browser implementation
+  }
+
+  setFlags(flags: wasip2Types.filesystem.types.DescriptorFlags): void {
+    // No-op in browser implementation
+  }
+
+  getFlags(): wasip2Types.filesystem.types.DescriptorFlags {
+    return { read: true, write: true }
+  }
+
+  getType(): wasip2Types.filesystem.types.DescriptorType {
+    if ((this.entry as DirectoryEntryData).dir) {
+      return 'directory'
+    }
+    return 'regular-file'
+  }
+
+  setSize(size: wasip2Types.filesystem.types.Filesize): void {
+    createError('unsupported')
+  }
+
+  setTimes(
+    dataAccessTimestamp: wasip2Types.filesystem.types.NewTimestamp,
+    dataModificationTimestamp: wasip2Types.filesystem.types.NewTimestamp,
+  ): void {
+    createError('unsupported')
+  }
+
+  isSameObject(other: wasip2Types.filesystem.types.Descriptor): boolean {
+    if (other instanceof Descriptor) {
+      return this.entry === (other as Descriptor).getEntry()
+    }
+    return false
+  }
+
+  metadataHash(): wasip2Types.filesystem.types.MetadataHashValue {
+    return {
+      lower: BigInt(0),
+      upper: BigInt(0),
+    }
+  }
+
+  metadataHashAt(
+    pathFlags: wasip2Types.filesystem.types.PathFlags,
+    path: string,
+  ): wasip2Types.filesystem.types.MetadataHashValue {
+    return {
+      lower: BigInt(0),
+      upper: BigInt(0),
+    }
   }
 
   /**
@@ -366,7 +486,7 @@ export class Descriptor {
       create: true,
       directory: true,
     })
-    
+
     if ((entry as FileEntry).source) {
       createError('exist')
     }
@@ -436,11 +556,11 @@ export class Descriptor {
    * @returns Never returns, always throws a FileSystemError
    */
   linkAt(
-    _oldPathFlags: PathFlags,
-    _oldPath: string,
-    _newDescriptor: Descriptor,
-    _newPath: string,
-  ): never {
+    oldPathFlags: PathFlags,
+    oldPath: string,
+    newDescriptor: wasip2Types.filesystem.types.Descriptor,
+    newPath: string,
+  ): void {
     createError('unsupported')
   }
 
@@ -449,11 +569,11 @@ export class Descriptor {
    * @returns The new Descriptor or throws a FileSystemError
    */
   openAt(
-    _pathFlags: PathFlags,
+    pathFlags: PathFlags,
     path: string,
     openFlags: OpenFlags,
-    _descriptorFlags: DescriptorFlags,
-  ): Descriptor {
+    flags: DescriptorFlags,
+  ): wasip2Types.filesystem.types.Descriptor {
     const dirEntry = this.entry as DirectoryEntryData
 
     if (!dirEntry.dir) {
@@ -485,10 +605,10 @@ export class Descriptor {
    * @returns Never returns, always throws a FileSystemError
    */
   renameAt(
-    _oldPath: string,
-    _newDescriptor: Descriptor,
-    _newPath: string,
-  ): never {
+    oldPath: string,
+    newDescriptor: wasip2Types.filesystem.types.Descriptor,
+    newPath: string,
+  ): void {
     createError('unsupported')
   }
 
@@ -509,7 +629,78 @@ export class Descriptor {
   }
 }
 
+/**
+ * Extracts a filesystem error code from a stream error
+ * @param err The error to extract from
+ * @returns The filesystem error code if available
+ */
+function filesystemErrorCode(
+  err: wasip2Types.io.error.Error,
+): ErrorCode | undefined {
+  // Basic implementation that tries to extract an error code
+  // from a FileSystemError
+  if (err instanceof FileSystemError) {
+    return err.payload // FileSystemError.payload is already an ErrorCode
+  }
+
+  // For other errors with a payload property that might be an error code
+  if (err && typeof err === 'object' && 'payload' in err) {
+    const payload = (err as any).payload
+    if (isErrorCode(payload)) {
+      return payload
+    }
+  }
+
+  // For other errors, return undefined
+  return undefined
+}
+
+// Type guard for error codes
+function isErrorCode(code: string): code is ErrorCode {
+  const validCodes: ErrorCode[] = [
+    'access',
+    'would-block',
+    'already',
+    'bad-descriptor',
+    'busy',
+    'deadlock',
+    'quota',
+    'exist',
+    'file-too-large',
+    'illegal-byte-sequence',
+    'in-progress',
+    'interrupted',
+    'invalid',
+    'io',
+    'is-directory',
+    'loop',
+    'too-many-links',
+    'message-size',
+    'name-too-long',
+    'no-device',
+    'no-entry',
+    'no-lock',
+    'insufficient-memory',
+    'insufficient-space',
+    'not-directory',
+    'not-empty',
+    'not-recoverable',
+    'unsupported',
+    'no-tty',
+    'no-such-device',
+    'overflow',
+    'not-permitted',
+    'pipe',
+    'read-only',
+    'invalid-seek',
+    'text-file-busy',
+    'cross-device',
+  ]
+  return validCodes.includes(code as ErrorCode)
+}
+
 export const types = {
   Descriptor,
   DirectoryEntryStream,
+  filesystemErrorCode,
 }

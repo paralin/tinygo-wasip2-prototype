@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8000;
+const PORT = 5173;
 
 const server = http.createServer((req, res) => {
   // Set COOP/COEP headers for cross-origin isolation (required for SharedArrayBuffer)

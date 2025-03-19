@@ -2,6 +2,8 @@
  * Implementation of wasi:random/random@0.2.0 interface
  */
 
+import type * as wasip2Types from '../../types/index.js'
+
 /**
  * Maximum number of bytes that crypto.getRandomValues can handle at once
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues

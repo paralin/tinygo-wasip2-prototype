@@ -1,0 +1,2 @@
+Read WIT.md for background information on wasi. We are developing shim/browser/... and trying to use the types in shim/types/... to properly type the shim/browser code. Some stubs are in place for complex code. Read about the error handling in WIT.md and make sure we do it correctly in shim/browser/... and use "cd ./shim/browser && bash typecheck.bash" to check types. Do not use type hacks like "as unknown"
+

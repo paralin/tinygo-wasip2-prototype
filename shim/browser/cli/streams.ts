@@ -8,6 +8,7 @@ import {
   InputStreamHandler,
   OutputStreamHandler,
 } from '../io/streams.js'
+import type * as wasip2Types from '../../types/index.js'
 
 // Text decoder for converting Uint8Array to string
 const textDecoder = new TextDecoder()
