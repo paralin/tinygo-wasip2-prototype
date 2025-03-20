@@ -31,20 +31,32 @@ export class Pollable implements wasip2Types.io.poll.Pollable {
   private data: PollableData
   private static counter = 0
 
-  // Constructor used internally - external code should use static factory methods
-  constructor(type: keyof PollableData, data: PollableData) {
-    this.type = type
-    this.data = data
+  /**
+   * Create a new Pollable with default values
+   * This satisfies the requirement for a parameterless constructor
+   */
+  constructor() {
+    this.type = 'timer'
+    this.data = { timer: { durationMs: 0 } }
     Pollable.counter++
   }
 
   /**
-   * Static factory method - creates a new Pollable
-   * This satisfies typechecking by having a parameterless constructor signature
-   * The real implementation still uses the original constructor internally
+   * Static factory method - creates a new Pollable with specific type and data
    */
   public static create(): Pollable {
-    return new Pollable('timer', { timer: { durationMs: 0 } })
+    return new Pollable()
+  }
+
+  /**
+   * Static factory method to create a timer-based Pollable
+   * @param durationMs Duration in milliseconds
+   */
+  public static withTimer(durationMs: number): Pollable {
+    const pollable = new Pollable()
+    pollable.type = 'timer'
+    pollable.data = { timer: { durationMs } }
+    return pollable
   }
 
   /**
@@ -81,7 +93,23 @@ export class Pollable implements wasip2Types.io.poll.Pollable {
  * @param durationMs Duration in milliseconds
  */
 export function createTimerPollable(durationMs: number): Pollable {
-  return new Pollable('timer', { timer: { durationMs } })
+  return Pollable.withTimer(durationMs)
+}
+
+/**
+ * Create an input stream with the given handler
+ * @param handler The handler for stream operations
+ */
+export function createInputStream(handler: InputStreamHandler): InputStream {
+  return InputStream.withHandler(handler)
+}
+
+/**
+ * Create an output stream with the given handler
+ * @param handler The handler for stream operations
+ */
+export function createOutputStream(handler: OutputStreamHandler): OutputStream {
+  return OutputStream.withHandler(handler)
 }
 
 /**

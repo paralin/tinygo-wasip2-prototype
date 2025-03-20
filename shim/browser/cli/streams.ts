@@ -8,13 +8,9 @@ import {
   InputStreamHandler,
   OutputStreamHandler,
 } from '../io/streams.js'
-import type * as wasip2Types from '../../types/index.js'
 
 // Text decoder for converting Uint8Array to string
 const textDecoder = new TextDecoder()
-
-// Symbol for dispose method
-const symbolDispose = Symbol.dispose || Symbol.for('dispose')
 
 /**
  * Default stdin implementation
@@ -72,35 +68,29 @@ const stderrHandler: OutputStreamHandler = {
 }
 
 // Create stream instances
-const stdinStream = new InputStream(stdinHandler)
-const stdoutStream = new OutputStream(stdoutHandler)
-const stderrStream = new OutputStream(stderrHandler)
+const stdinStream = InputStream.withHandler(stdinHandler)
+const stdoutStream = OutputStream.withHandler(stdoutHandler)
+const stderrStream = OutputStream.withHandler(stderrHandler)
 
 /**
  * Set a custom handler for stdin
  */
 export function setStdinHandler(handler: InputStreamHandler): void {
-  // In production code, we would replace the handler
-  // but for now we just warn that this isn't implemented
-  console.warn('Custom stdin handler not implemented')
+  stdinStream.setHandler(handler)
 }
 
 /**
  * Set a custom handler for stdout
  */
 export function setStdoutHandler(handler: OutputStreamHandler): void {
-  // In production code, we would replace the handler
-  // but for now we just warn that this isn't implemented
-  console.warn('Custom stdout handler not implemented')
+  stdoutStream.setHandler(handler)
 }
 
 /**
  * Set a custom handler for stderr
  */
 export function setStderrHandler(handler: OutputStreamHandler): void {
-  // In production code, we would replace the handler
-  // but for now we just warn that this isn't implemented
-  console.warn('Custom stderr handler not implemented')
+  stderrStream.setHandler(handler)
 }
 
 /**

@@ -59,28 +59,52 @@ export class InputStream implements wasip2Types.io.streams.InputStream {
   private isOpen: boolean = true
 
   /**
-   * Create a new input stream with the given handler
-   * This is the internal constructor - external code should use the static factory
+   * Create a new input stream with default empty handler
+   * This satisfies the requirement for a parameterless constructor
    */
-  constructor(handler: InputStreamHandler) {
-    if (!handler || !handler.blockingRead) {
-      throw new Error('Invalid input stream handler')
-    }
+  constructor() {
     this.id = ++streamIdCounter
-    this.handler = handler
+    // Create a dummy handler that returns empty data
+    this.handler = {
+      blockingRead: () => new Uint8Array(0),
+    }
   }
 
   /**
-   * Static factory method to create an InputStream
-   * Used to satisfy the typechecking requirement for a parameterless constructor
-   * The real implementation still uses handlers internally
+   * Static factory method to create an empty InputStream
    */
   public static create(): InputStream {
-    // Create a dummy handler that returns empty data
-    const dummyHandler: InputStreamHandler = {
-      blockingRead: () => new Uint8Array(0),
+    return new InputStream()
+  }
+
+  /**
+   * Static factory method to create an InputStream with a handler
+   * @param handler The handler for stream operations
+   */
+  public static withHandler(handler: InputStreamHandler): InputStream {
+    if (!handler || !handler.blockingRead) {
+      throw new Error('Invalid input stream handler')
     }
-    return new InputStream(dummyHandler)
+    const stream = new InputStream()
+    stream.handler = handler
+    return stream
+  }
+
+  /**
+   * Set a new handler for this input stream
+   * @param handler The handler for stream operations
+   */
+  public setHandler(handler: InputStreamHandler): void {
+    if (!handler || !handler.blockingRead) {
+      throw new Error('Invalid input stream handler')
+    }
+
+    // Clean up the old handler if it has a drop method
+    if (this.isOpen && this.handler.drop) {
+      this.handler.drop()
+    }
+
+    this.handler = handler
   }
 
   /**
@@ -167,30 +191,54 @@ export class OutputStream implements wasip2Types.io.streams.OutputStream {
   private isWritable: boolean = true
 
   /**
-   * Create a new output stream with the given handler
-   * This is the internal constructor - external code should use the static factory
+   * Create a new output stream with default empty handler
+   * This satisfies the requirement for a parameterless constructor
    */
-  constructor(handler: OutputStreamHandler) {
-    if (!handler || !handler.write || !handler.blockingFlush) {
-      throw new Error('Invalid output stream handler')
-    }
+  constructor() {
     this.id = ++streamIdCounter
     this.open = true
-    this.handler = handler
-  }
-
-  /**
-   * Static factory method to create an OutputStream
-   * Used to satisfy the typechecking requirement for a parameterless constructor
-   * The real implementation still uses handlers internally
-   */
-  public static create(): OutputStream {
     // Create a dummy handler that does nothing
-    const dummyHandler: OutputStreamHandler = {
+    this.handler = {
       write: () => BigInt(0),
       blockingFlush: () => {},
     }
-    return new OutputStream(dummyHandler)
+  }
+
+  /**
+   * Static factory method to create an empty OutputStream
+   */
+  public static create(): OutputStream {
+    return new OutputStream()
+  }
+
+  /**
+   * Static factory method to create an OutputStream with a handler
+   * @param handler The handler for stream operations
+   */
+  public static withHandler(handler: OutputStreamHandler): OutputStream {
+    if (!handler || !handler.write || !handler.blockingFlush) {
+      throw new Error('Invalid output stream handler')
+    }
+    const stream = new OutputStream()
+    stream.handler = handler
+    return stream
+  }
+
+  /**
+   * Set a new handler for this output stream
+   * @param handler The handler for stream operations
+   */
+  public setHandler(handler: OutputStreamHandler): void {
+    if (!handler || !handler.write || !handler.blockingFlush) {
+      throw new Error('Invalid output stream handler')
+    }
+
+    // Clean up the old handler if it has a drop method
+    if (this.open && this.handler.drop) {
+      this.handler.drop()
+    }
+
+    this.handler = handler
   }
 
   /**
