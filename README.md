@@ -2,6 +2,12 @@
 
 This repository contains a demonstration of running Go code in a browser using WebAssembly with WASI Preview2 support via TinyGo.
 
+As far as I can tell, what I want to do (implement the stdlib with async functions) would require modifying Tinygo. Currently a goroutine unwinds back to the scheduler by calling task.Pause(), which invokes tinygo_unwind and uses asyncify to return control to the scheduler but not to JavaScript. The scheduler then continues running other goroutines without ever returning control to the JavaScript environment. This means any Promises created during WebAssembly execution would never have a chance to resolve, as the JavaScript event loop can't process them while WebAssembly has control.
+
+To properly support async JavaScript functions, we would need to modify this behavior so that when an async function is called, the goroutine unwinds all the way back to JavaScript (not just to the scheduler), allowing the JavaScript event loop to run and process the Promise. Then we would need to call run() again to resume the scheduler.
+
+I can see a way that this could be done by modifying the tinygo implementation, but probably not worth doing compared to just using the syscall/js old-fashioned wasm approach (not wasi), and waiting for JSPI support later this year.
+
 ## Repository Contents
 
 - **main.go**: A simple Go program that outputs a greeting message
