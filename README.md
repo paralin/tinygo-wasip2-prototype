@@ -191,6 +191,18 @@ The `scheduler` has the following general loop, while the program has not exited
   - Otherwise return with an error saying we are deadlocked.
 - Call Resume on the Task.
 
+When a goroutine needs to yield control (e.g., mutex lock, channel operation, sleep) it calls `Task.Pause()`:
+1. Check for stack overflow by verifying the stack canary value.
+2. Call `currentTask.state.unwind()` which invokes `tinygo_unwind` in assembly
+3. `tinygo_unwind` performs these steps:
+   - Checks if already in rewinding mode:
+     - If yes, calls `stop_rewind` and clears the flag
+   - If not in rewinding mode:
+     - Saves the current stack pointer to `state.csp`
+     - Calls `asyncify.start_unwind(state)`
+     - This triggers the asyncify transformation to unwind the entire stack
+     - Control returns to the scheduler without executing the rest of the goroutine
+
 When the scheduler decides to run a goroutine (represented as a Task), it calls `Task.Resume()`:
 
 1. If the task has never run before (`!t.state.launched`):
@@ -214,16 +226,6 @@ When the scheduler decides to run a goroutine (represented as a Task), it calls 
      - Calls `stop_unwind` when the task suspends again or completes
      - Restores the original stack pointer
 
-When a goroutine needs to yield control (e.g., mutex lock, channel operation, sleep) it calls `Task.Pause()`:
-
-1. Check for stack overflow by verifying the stack canary value.
-2. Call `currentTask.state.unwind()` which invokes `tinygo_unwind` in assembly
-3. `tinygo_unwind` performs these steps:
-   - Checks if already in rewinding mode:
-     - If yes, calls `stop_rewind` and clears the flag
-   - If not in rewinding mode:
-     - Saves the current stack pointer to `state.csp`
-     - Calls `asyncify.start_unwind(state)`
-     - This triggers the asyncify transformation to unwind the entire stack
-     - Control returns to the scheduler without executing the rest of the goroutine
-
+When we call `start_unwind` in `task.Pause` the function call in `tinygo_rewind`
+returns, and we then call `stop_unwind` to finish the unwind operation, and
+return back to the scheduler, returning from `task.Resume`.
