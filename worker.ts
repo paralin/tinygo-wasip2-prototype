@@ -71,10 +71,10 @@ self.onmessage = async (event) => {
       initializeEnvironment()
 
       // Instantiate the WebAssembly module
-      const wasmRoot = (await instantiate(
+      const wasmRoot = await (instantiate(
         fetchWasmModule,
-        wasip2 as any,
-      )) as unknown as Root
+        wasip2 as any, // the wasi code expects wasi:foo@bar but the types say wasi@v0.2.0... incorrrectly
+      ) as unknown as Promise<Root>)
 
       // Tell the main thread we're ready
       self.postMessage({ type: 'ready' })

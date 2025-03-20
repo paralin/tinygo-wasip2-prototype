@@ -54,9 +54,32 @@ Tinygo uses this construct internally to import functions from the "imports" str
 func wasmimport_PollableReady(self0 uint32) (result0 uint32)
 ```
 
-## Active Challenges
+## Asynchronous I/O
+
+We use Atomics.wait to block the javascript thread while waiting for a duration to implement Pollable.block() with scheduleDuration for time.After and time.Sleep.
+
+- **WebWorker**: The WASM module runs in a dedicated WebWorker thread, leaving the main thread responsive
+- **WASI Preview2**: We've implemented the missing parts of the WASI Preview2 interfaces for clocks and polling
+- **Synchronous Blocking**: Uses SharedArrayBuffer and Atomics.wait to block the thread synchronously w/ a timeout
+- **Cross-origin Isolation**: The server is configured with required COOP/COEP headers for SharedArrayBuffer support
+
+This implementation allows standard Go code using `time.Sleep` to work without modification by implementing the underlying WASI interfaces that TinyGo uses.
+
+### Implementation Flow
+
+1. Main thread creates a WebWorker and initializes it
+2. WebWorker loads and runs the WASM module
+3. Go code in WASM calls `time.Sleep(duration)`
+4. TinyGo runtime calls WASI's `monotonic-clock.subscribeDuration(duration)`
+5. Our shim returns a Pollable object
+6. TinyGo runtime calls `pollable.block()` on that object
+7. The Pollable's block method uses Atomics.wait with a timeout set to the desired duration
+8. The worker thread blocks synchronously until Atomics.wait times out after the specified duration
+9. Execution continues after the timeout
 
 ### Nonblocking I/O
+
+This section describes the challenges we aim to address in this implementation.
 
 When we call "time.Sleep" in Go this results in calling monotonic-clock
 subscribeDuration which is currently stubbed in the wasip2 shim implementation
@@ -104,50 +127,39 @@ Since jspi is not yet supported and there's apparently no way to return
 asynchronously from a call from wasm => javascript I guess the only way to make
 this work is to force all the calls out of Go to be synchronous in nature and
 handle the async with a callback calling into the Go runtime from outside of
-wasm when the promise resolves. (Is this even possible?)
+wasm when the promise resolves.
 
 ### Blocking I/O
 
-There is actually a way to block JavaScript in the web browser; we can use
-[Atomics.wait] with a SharedArrayBuffer to block the JS thread. This is
-supported in all major browsers but requires [secure context] and [cross-origin
-isolated] headers. This would require two coopoerating Worker where one Worker
-sets up the JavaScript async Promise callbacks and the other (wasm) uses
-Atomics.wait to block the wasm function call until the Promise resolves.
+There is a way to block JavaScript in the web browser; we can use [Atomics.wait]
+with a SharedArrayBuffer to block the JS thread. This is supported in all major
+browsers but requires [secure context] and [cross-origin isolated] headers. This
+would require two coopoerating Worker where one Worker sets up the JavaScript
+async Promise callbacks and the other (wasm) uses Atomics.wait to block the wasm
+function call until the Promise resolves.
 
 [Atomics.wait]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics/wait
 [SharedArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
 [secure context]: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts
 [cross-origin isolated]: https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated
 
-## Simplified Atomics.wait Implementation
+### Asynchronous I/O With Asyncify
 
-This branch contains a simplified implementation of the Atomics.wait approach for synchronous blocking in the browser:
+TinyGo already uses [Asyncify] from Binaryen to implement Goroutines.
 
-1. **WebWorker Execution**: The WASM module runs in a dedicated WebWorker thread, leaving the main thread responsive
-2. **WASI Preview2 Compliance**: We've implemented the missing parts of the WASI Preview2 interfaces for clocks and polling
-3. **Proper Interface Chain**: Our implementation follows the proper call chain from time.Sleep through WASI interfaces
-4. **Synchronous Blocking**: Uses SharedArrayBuffer and Atomics.wait to provide true synchronous blocking
-5. **Cross-origin Isolation**: The server is configured with required COOP/COEP headers for SharedArrayBuffer support
+[Asyncify]: https://github.com/WebAssembly/binaryen/blob/main/src/passes/Asyncify.cpp
 
-This implementation allows standard Go code using `time.Sleep` to work without modification by implementing the underlying WASI interfaces that TinyGo uses.
+TinyGo uses the asyncify scheduler implementation to enable goroutines to be
+properly suspended and resumed in WebAssembly environments, particularly for
+handling async functions imported with `//go:wasmimport`.
 
-### Key Components
+- TinyGo uses Binaryen's wasm-opt tool with the `--asyncify` flag to transform WebAssembly code.
+- Goroutines are represented as Task w/ a Stack within the tinygo source code (the Go runtime).
+- When a goroutine needs to wait, it's unwound using the asyncify mechanism
 
-- `main.ts`: Sets up the main thread that creates the WebWorker
-- `shim/browser/worker.ts`: WebWorker that loads and runs the WASM module
-- `shim/browser/clocks.ts`: Implements the monotonic-clock interface with `subscribeDuration` that returns a Pollable
-- `shim/browser/poll.ts`: Implements the Pollable interface with a `block()` method using Atomics.wait with timeout
-- `build-browser.bash`: Sets up a server with appropriate headers for cross-origin isolation
+The key tinygo source files are:
 
-### Implementation Flow
+- `task_asyncify.go`: implementation of Task calling the Asyncify functions
+- `task_asyncify_wasm.S`: WebAssembly-specific assembly code for stack manipulation
+- `scheduler_cooperative.go`: cooperative scheduler that manages Goroutine as Task
 
-1. Main thread creates a WebWorker and initializes it
-2. WebWorker loads and runs the WASM module
-3. Go code in WASM calls `time.Sleep(duration)`
-4. TinyGo runtime calls WASI's `monotonic-clock.subscribeDuration(duration)`
-5. Our shim returns a Pollable object
-6. TinyGo runtime calls `pollable.block()` on that object
-7. The Pollable's block method uses Atomics.wait with a timeout set to the desired duration
-8. The worker thread blocks synchronously until Atomics.wait times out after the specified duration
-9. Execution continues after the timeout
