@@ -3,6 +3,7 @@
  */
 
 import type * as wasip2Types from '../../types/index.js'
+import { InputStream, InputStreamHandler, OutputStream, OutputStreamHandler } from './streams.js'
 
 /**
  * Global dummy SharedArrayBuffer for Atomics.wait operations
@@ -19,7 +20,6 @@ Atomics.store(globalSharedArray, 0, 0)
  */
 type PollableData = {
   timer?: { durationMs: number }
-  // Add more types here as needed
 }
 
 /**
@@ -113,6 +113,15 @@ export function createOutputStream(handler: OutputStreamHandler): OutputStream {
 }
 
 /**
+ * Check if an object is a Pollable with a ready function
+ * @param obj Object to check
+ * @returns True if the object has a ready function
+ */
+function isPollable(obj: any): obj is Pollable {
+  return obj && (obj instanceof Pollable || typeof obj.ready === 'function');
+}
+
+/**
  * Poll on a list of pollables, blocking until at least one is ready
  * @param in_ Array of pollables to poll
  * @returns Array of indices of ready pollables
@@ -128,7 +137,8 @@ function pollFn(in_: wasip2Types.io.poll.Pollable[]): Uint32Array {
 
   // Check if any pollables are ready without blocking
   for (let i = 0; i < in_.length; i++) {
-    if (in_[i].ready()) {
+    const x = in_[i]
+    if (isPollable(x) && x.ready()) {
       return new Uint32Array([i])
     }
   }
