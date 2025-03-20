@@ -2,24 +2,23 @@
  * Implementation of wasi:filesystem/preopens@0.2.0 interface
  */
 
-import { Descriptor, setFileSystemData } from './types.js'
-import type * as wasip2Types from '../../types/index.js'
+import { Descriptor, setFileSystemData, DirectoryEntryData } from './types.js'
 
 // Initial empty filesystem
 const initialFileSystemData = { dir: {} }
 
 // Root directory descriptor and path
 let preopenDirectories: Array<[Descriptor, string]> = [
-  [new Descriptor(initialFileSystemData), '/'],
+  [Descriptor.fromEntry(initialFileSystemData), '/'],
 ]
 
 /**
  * Initialize the filesystem with data
  * @param fileData Filesystem data to initialize with
  */
-export function initializeFileSystem(fileData: any): void {
+export function initializeFileSystem(fileData: DirectoryEntryData): void {
   setFileSystemData(fileData)
-  preopenDirectories[0] = [new Descriptor(fileData), '/']
+  preopenDirectories[0] = [Descriptor.fromEntry(fileData), '/']
 }
 
 /**

@@ -42,11 +42,11 @@ export function createError(
 /**
  * In-memory filesystem data structure
  */
-interface FileEntry {
+export interface FileEntry {
   source: Uint8Array | string
 }
 
-interface DirectoryEntryData {
+export interface DirectoryEntryData {
   dir: Record<string, DirectoryEntryData | FileEntry>
 }
 
