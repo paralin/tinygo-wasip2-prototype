@@ -163,3 +163,40 @@ The key tinygo source files are:
 - `task_asyncify_wasm.S`: WebAssembly-specific assembly code for stack manipulation
 - `scheduler_cooperative.go`: cooperative scheduler that manages Goroutine as Task
 
+When the tinygo program starts, we call `run` which is defined in scheduler_cooporative.go.
+
+```go
+// run is called by the program entry point to execute the go program.
+// With a scheduler, init and the main function are invoked in a goroutine before starting the scheduler.
+func run() {
+	initHeap()
+	initRand()
+	go func() {
+		initAll()
+		callMain()
+		mainExited = true
+	}()
+	scheduler(false)
+}
+```
+
+This creates a new Goroutine to call `init()` and `main()` which is initially sleeping.
+
+The `scheduler` has the following general loop, while the program has not exited:
+
+- Add Task that are done sleeping to the end of the runqueue.
+- Run the callback for any timers that have ticked.
+- Pop the next Task from the runqueue.
+  - If there is no queued Task: sleep until the next sleepQueue or timerQueue entry is ready.
+  - Otherwise return with an error saying we are deadlocked.
+- Call Resume on the Task.
+
+Calling Resume on the Task:
+
+- If the Task has not launched: call `launch()` which calls `tinygo_launch`
+- If the Task has launched: call `rewind()` which calls `tinygo_rewind`
+
+Calling Pause on the Task:
+
+- Call `unwind()` which calls `tinygo_unwind`
+- `tinygo_unwind` saves the current C stack pointer and asks Asyncify to unwind.
