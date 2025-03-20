@@ -19,6 +19,15 @@ function now(): Datetime {
   return { seconds, nanoseconds }
 }
 
+/**
+ * Get the resolution of the wall clock
+ * @returns Resolution in seconds and nanoseconds
+ */
+function resolution(): Datetime {
+  return { seconds: BigInt(0), nanoseconds: 1_000_000 } // 1 millisecond resolution
+}
+
 export const wallClock = {
   now,
+  resolution,
 }

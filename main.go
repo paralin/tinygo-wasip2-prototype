@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 )
 
 // writeTestFile creates a test file with the given content
@@ -37,4 +39,16 @@ func main() {
 	}
 
 	os.Stdout.WriteString("Successfully wrote and read file: " + string(data) + "\n")
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+		case <-time.After(time.Second):
+		}
+
+		os.Stdout.WriteString("Timer: " + time.Now().String() + "\n")
+	}
 }

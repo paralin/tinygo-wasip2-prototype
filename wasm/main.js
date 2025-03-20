@@ -102,70 +102,68 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
   const { getStderr } = imports['wasi:cli/stderr'];
   const { getStdin } = imports['wasi:cli/stdin'];
   const { getStdout } = imports['wasi:cli/stdout'];
-  const { now } = imports['wasi:clocks/monotonic-clock'];
+  const { now, subscribeDuration } = imports['wasi:clocks/monotonic-clock'];
   const { now: now$1 } = imports['wasi:clocks/wall-clock'];
   const { getDirectories } = imports['wasi:filesystem/preopens'];
   const { Descriptor, DirectoryEntryStream } = imports['wasi:filesystem/types'];
   const { Error: Error$1 } = imports['wasi:io/error'];
+  const { Pollable } = imports['wasi:io/poll'];
   const { InputStream, OutputStream } = imports['wasi:io/streams'];
   const { getRandomBytes, getRandomU64 } = imports['wasi:random/random'];
   let gen = (function* init () {
     let exports0;
-    const handleTable2 = [T_FLAG, 0];
-    const captureTable2= new Map();
-    let captureCnt2 = 0;
-    handleTables[2] = handleTable2;
+    const handleTable1 = [T_FLAG, 0];
+    const captureTable1= new Map();
+    let captureCnt1 = 0;
+    handleTables[1] = handleTable1;
     
-    function trampoline2() {
+    function trampoline0(arg0) {
+      var handle1 = arg0;
+      var rep2 = handleTable1[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable1.get(rep2);
+      if (!rsc0) {
+        rsc0 = Object.create(Pollable.prototype);
+        Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
+        Object.defineProperty(rsc0, symbolRscRep, { writable: true, value: rep2});
+      }
+      curResourceBorrows.push(rsc0);
+      rsc0.block();
+      for (const rsc of curResourceBorrows) {
+        rsc[symbolRscHandle] = undefined;
+      }
+      curResourceBorrows = [];
+    }
+    
+    const handleTable3 = [T_FLAG, 0];
+    const captureTable3= new Map();
+    let captureCnt3 = 0;
+    handleTables[3] = handleTable3;
+    
+    function trampoline3() {
       const ret = getStdout();
       if (!(ret instanceof OutputStream)) {
         throw new TypeError('Resource error: Not a valid "OutputStream" resource.');
       }
       var handle0 = ret[symbolRscHandle];
       if (!handle0) {
-        const rep = ret[symbolRscRep] || ++captureCnt2;
-        captureTable2.set(rep, ret);
-        handle0 = rscTableCreateOwn(handleTable2, rep);
+        const rep = ret[symbolRscRep] || ++captureCnt3;
+        captureTable3.set(rep, ret);
+        handle0 = rscTableCreateOwn(handleTable3, rep);
       }
       return handle0;
     }
     
     
-    function trampoline3() {
+    function trampoline4() {
       const ret = now();
       return toUint64(ret);
     }
     
     
-    function trampoline4() {
-      const ret = getRandomU64();
-      return toUint64(ret);
-    }
-    
-    
-    function trampoline5() {
-      const ret = getStderr();
-      if (!(ret instanceof OutputStream)) {
-        throw new TypeError('Resource error: Not a valid "OutputStream" resource.');
-      }
-      var handle0 = ret[symbolRscHandle];
-      if (!handle0) {
-        const rep = ret[symbolRscRep] || ++captureCnt2;
-        captureTable2.set(rep, ret);
-        handle0 = rscTableCreateOwn(handleTable2, rep);
-      }
-      return handle0;
-    }
-    
-    const handleTable1 = [T_FLAG, 0];
-    const captureTable1= new Map();
-    let captureCnt1 = 0;
-    handleTables[1] = handleTable1;
-    
-    function trampoline6() {
-      const ret = getStdin();
-      if (!(ret instanceof InputStream)) {
-        throw new TypeError('Resource error: Not a valid "InputStream" resource.');
+    function trampoline5(arg0) {
+      const ret = subscribeDuration(BigInt.asUintN(64, arg0));
+      if (!(ret instanceof Pollable)) {
+        throw new TypeError('Resource error: Not a valid "Pollable" resource.');
       }
       var handle0 = ret[symbolRscHandle];
       if (!handle0) {
@@ -176,11 +174,51 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
       return handle0;
     }
     
+    
+    function trampoline6() {
+      const ret = getRandomU64();
+      return toUint64(ret);
+    }
+    
+    
+    function trampoline7() {
+      const ret = getStderr();
+      if (!(ret instanceof OutputStream)) {
+        throw new TypeError('Resource error: Not a valid "OutputStream" resource.');
+      }
+      var handle0 = ret[symbolRscHandle];
+      if (!handle0) {
+        const rep = ret[symbolRscRep] || ++captureCnt3;
+        captureTable3.set(rep, ret);
+        handle0 = rscTableCreateOwn(handleTable3, rep);
+      }
+      return handle0;
+    }
+    
+    const handleTable2 = [T_FLAG, 0];
+    const captureTable2= new Map();
+    let captureCnt2 = 0;
+    handleTables[2] = handleTable2;
+    
+    function trampoline8() {
+      const ret = getStdin();
+      if (!(ret instanceof InputStream)) {
+        throw new TypeError('Resource error: Not a valid "InputStream" resource.');
+      }
+      var handle0 = ret[symbolRscHandle];
+      if (!handle0) {
+        const rep = ret[symbolRscRep] || ++captureCnt2;
+        captureTable2.set(rep, ret);
+        handle0 = rscTableCreateOwn(handleTable2, rep);
+      }
+      return handle0;
+    }
+    
     let exports1;
     let memory0;
     let realloc0;
     
-    function trampoline9(arg0) {
+    function trampoline11(arg0) {
       const ret = getEnvironment();
       var vec3 = ret;
       var len3 = vec3.length;
@@ -202,7 +240,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline10(arg0) {
+    function trampoline12(arg0) {
       const ret = getArguments();
       var vec1 = ret;
       var len1 = vec1.length;
@@ -219,7 +257,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline11(arg0) {
+    function trampoline13(arg0) {
       const ret = initialCwd();
       var variant1 = ret;
       if (variant1 === null || variant1=== undefined) {
@@ -239,10 +277,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     let captureCnt0 = 0;
     handleTables[0] = handleTable0;
     
-    function trampoline12(arg0, arg1, arg2) {
+    function trampoline14(arg0, arg1, arg2) {
       var handle1 = arg0;
-      var rep2 = handleTable1[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable1.get(rep2);
+      var rep2 = handleTable2[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable2.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(InputStream.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -310,10 +348,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline13(arg0, arg1) {
+    function trampoline15(arg0, arg1) {
       var handle1 = arg0;
-      var rep2 = handleTable2[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable2.get(rep2);
+      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable3.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(OutputStream.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -374,10 +412,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline14(arg0, arg1, arg2, arg3) {
+    function trampoline16(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable2[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable2.get(rep2);
+      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable3.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(OutputStream.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -441,7 +479,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline15(arg0) {
+    function trampoline17(arg0) {
       const ret = now$1();
       var {seconds: v0_0, nanoseconds: v0_1 } = ret;
       dataView(memory0).setBigInt64(arg0 + 0, toUint64(v0_0), true);
@@ -449,7 +487,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline16(arg0, arg1) {
+    function trampoline18(arg0, arg1) {
       const ret = getRandomBytes(BigInt.asUintN(64, arg0));
       var val0 = ret;
       var len0 = val0.byteLength;
@@ -460,15 +498,15 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
       dataView(memory0).setInt32(arg1 + 0, ptr0, true);
     }
     
-    const handleTable3 = [T_FLAG, 0];
-    const captureTable3= new Map();
-    let captureCnt3 = 0;
-    handleTables[3] = handleTable3;
+    const handleTable4 = [T_FLAG, 0];
+    const captureTable4= new Map();
+    let captureCnt4 = 0;
+    handleTables[4] = handleTable4;
     
-    function trampoline17(arg0, arg1, arg2, arg3) {
+    function trampoline19(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -667,10 +705,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline18(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
+    function trampoline20(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -687,8 +725,8 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
       var len4 = arg3;
       var result4 = utf8Decoder.decode(new Uint8Array(memory0.buffer, ptr4, len4));
       var handle6 = arg4;
-      var rep7 = handleTable3[(handle6 << 1) + 1] & ~T_FLAG;
-      var rsc5 = captureTable3.get(rep7);
+      var rep7 = handleTable4[(handle6 << 1) + 1] & ~T_FLAG;
+      var rsc5 = captureTable4.get(rep7);
       if (!rsc5) {
         rsc5 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc5, symbolRscHandle, { writable: true, value: handle6});
@@ -887,10 +925,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline19(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+    function trampoline21(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -946,9 +984,9 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
           }
           var handle7 = e[symbolRscHandle];
           if (!handle7) {
-            const rep = e[symbolRscRep] || ++captureCnt3;
-            captureTable3.set(rep, e);
-            handle7 = rscTableCreateOwn(handleTable3, rep);
+            const rep = e[symbolRscRep] || ++captureCnt4;
+            captureTable4.set(rep, e);
+            handle7 = rscTableCreateOwn(handleTable4, rep);
           }
           dataView(memory0).setInt32(arg6 + 4, handle7, true);
           break;
@@ -1125,10 +1163,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline20(arg0, arg1, arg2, arg3) {
+    function trampoline22(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -1332,15 +1370,15 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
       }
     }
     
-    const handleTable4 = [T_FLAG, 0];
-    const captureTable4= new Map();
-    let captureCnt4 = 0;
-    handleTables[4] = handleTable4;
+    const handleTable5 = [T_FLAG, 0];
+    const captureTable5= new Map();
+    let captureCnt5 = 0;
+    handleTables[5] = handleTable5;
     
-    function trampoline21(arg0, arg1) {
+    function trampoline23(arg0, arg1) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -1367,9 +1405,9 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
           }
           var handle3 = e[symbolRscHandle];
           if (!handle3) {
-            const rep = e[symbolRscRep] || ++captureCnt4;
-            captureTable4.set(rep, e);
-            handle3 = rscTableCreateOwn(handleTable4, rep);
+            const rep = e[symbolRscRep] || ++captureCnt5;
+            captureTable5.set(rep, e);
+            handle3 = rscTableCreateOwn(handleTable5, rep);
           }
           dataView(memory0).setInt32(arg1 + 4, handle3, true);
           break;
@@ -1546,10 +1584,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline22(arg0, arg1, arg2, arg3) {
+    function trampoline24(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -1752,10 +1790,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline23(arg0, arg1, arg2, arg3) {
+    function trampoline25(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -1954,10 +1992,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline24(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+    function trampoline26(arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -1968,8 +2006,8 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
       var len3 = arg2;
       var result3 = utf8Decoder.decode(new Uint8Array(memory0.buffer, ptr3, len3));
       var handle5 = arg3;
-      var rep6 = handleTable3[(handle5 << 1) + 1] & ~T_FLAG;
-      var rsc4 = captureTable3.get(rep6);
+      var rep6 = handleTable4[(handle5 << 1) + 1] & ~T_FLAG;
+      var rsc4 = captureTable4.get(rep6);
       if (!rsc4) {
         rsc4 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc4, symbolRscHandle, { writable: true, value: handle5});
@@ -2168,10 +2206,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline25(arg0, arg1) {
+    function trampoline27(arg0, arg1) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -2444,10 +2482,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline26(arg0, arg1, arg2, arg3, arg4) {
+    function trampoline28(arg0, arg1, arg2, arg3, arg4) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -2729,10 +2767,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline27(arg0, arg1, arg2, arg3, arg4, arg5) {
+    function trampoline29(arg0, arg1, arg2, arg3, arg4, arg5) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -2934,10 +2972,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline28(arg0, arg1) {
+    function trampoline30(arg0, arg1) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -3133,10 +3171,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline29(arg0, arg1, arg2, arg3) {
+    function trampoline31(arg0, arg1, arg2, arg3) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -3335,10 +3373,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline30(arg0, arg1, arg2, arg3, arg4) {
+    function trampoline32(arg0, arg1, arg2, arg3, arg4) {
       var handle1 = arg0;
-      var rep2 = handleTable3[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable3.get(rep2);
+      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable4.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(Descriptor.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -3538,10 +3576,10 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline31(arg0, arg1) {
+    function trampoline33(arg0, arg1) {
       var handle1 = arg0;
-      var rep2 = handleTable4[(handle1 << 1) + 1] & ~T_FLAG;
-      var rsc0 = captureTable4.get(rep2);
+      var rep2 = handleTable5[(handle1 << 1) + 1] & ~T_FLAG;
+      var rsc0 = captureTable5.get(rep2);
       if (!rsc0) {
         rsc0 = Object.create(DirectoryEntryStream.prototype);
         Object.defineProperty(rsc0, symbolRscHandle, { writable: true, value: handle1});
@@ -3793,7 +3831,7 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     }
     
     
-    function trampoline32(arg0) {
+    function trampoline34(arg0) {
       const ret = getDirectories();
       var vec3 = ret;
       var len3 = vec3.length;
@@ -3806,9 +3844,9 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         }
         var handle1 = tuple0_0[symbolRscHandle];
         if (!handle1) {
-          const rep = tuple0_0[symbolRscRep] || ++captureCnt3;
-          captureTable3.set(rep, tuple0_0);
-          handle1 = rscTableCreateOwn(handleTable3, rep);
+          const rep = tuple0_0[symbolRscRep] || ++captureCnt4;
+          captureTable4.set(rep, tuple0_0);
+          handle1 = rscTableCreateOwn(handleTable4, rep);
         }
         dataView(memory0).setInt32(base + 0, handle1, true);
         var ptr2 = utf8Encode(tuple0_1, realloc0, memory0);
@@ -3822,19 +3860,6 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     
     let exports2;
     let exports3;
-    function trampoline0(handle) {
-      const handleEntry = rscTableRemove(handleTable1, handle);
-      if (handleEntry.own) {
-        
-        const rsc = captureTable1.get(handleEntry.rep);
-        if (rsc) {
-          if (rsc[symbolDispose]) rsc[symbolDispose]();
-          captureTable1.delete(handleEntry.rep);
-        } else if (InputStream[symbolCabiDispose]) {
-          InputStream[symbolCabiDispose](handleEntry.rep);
-        }
-      }
-    }
     function trampoline1(handle) {
       const handleEntry = rscTableRemove(handleTable2, handle);
       if (handleEntry.own) {
@@ -3843,12 +3868,12 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         if (rsc) {
           if (rsc[symbolDispose]) rsc[symbolDispose]();
           captureTable2.delete(handleEntry.rep);
-        } else if (OutputStream[symbolCabiDispose]) {
-          OutputStream[symbolCabiDispose](handleEntry.rep);
+        } else if (InputStream[symbolCabiDispose]) {
+          InputStream[symbolCabiDispose](handleEntry.rep);
         }
       }
     }
-    function trampoline7(handle) {
+    function trampoline2(handle) {
       const handleEntry = rscTableRemove(handleTable3, handle);
       if (handleEntry.own) {
         
@@ -3856,12 +3881,12 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         if (rsc) {
           if (rsc[symbolDispose]) rsc[symbolDispose]();
           captureTable3.delete(handleEntry.rep);
-        } else if (Descriptor[symbolCabiDispose]) {
-          Descriptor[symbolCabiDispose](handleEntry.rep);
+        } else if (OutputStream[symbolCabiDispose]) {
+          OutputStream[symbolCabiDispose](handleEntry.rep);
         }
       }
     }
-    function trampoline8(handle) {
+    function trampoline9(handle) {
       const handleEntry = rscTableRemove(handleTable4, handle);
       if (handleEntry.own) {
         
@@ -3869,6 +3894,19 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         if (rsc) {
           if (rsc[symbolDispose]) rsc[symbolDispose]();
           captureTable4.delete(handleEntry.rep);
+        } else if (Descriptor[symbolCabiDispose]) {
+          Descriptor[symbolCabiDispose](handleEntry.rep);
+        }
+      }
+    }
+    function trampoline10(handle) {
+      const handleEntry = rscTableRemove(handleTable5, handle);
+      if (handleEntry.own) {
+        
+        const rsc = captureTable5.get(handleEntry.rep);
+        if (rsc) {
+          if (rsc[symbolDispose]) rsc[symbolDispose]();
+          captureTable5.delete(handleEntry.rep);
         } else if (DirectoryEntryStream[symbolCabiDispose]) {
           DirectoryEntryStream[symbolCabiDispose](handleEntry.rep);
         }
@@ -3883,16 +3921,17 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         'initial-cwd': exports0['2'],
       },
       'wasi:cli/stderr@0.2.0': {
-        'get-stderr': trampoline5,
+        'get-stderr': trampoline7,
       },
       'wasi:cli/stdin@0.2.0': {
-        'get-stdin': trampoline6,
+        'get-stdin': trampoline8,
       },
       'wasi:cli/stdout@0.2.0': {
-        'get-stdout': trampoline2,
+        'get-stdout': trampoline3,
       },
       'wasi:clocks/monotonic-clock@0.2.0': {
-        now: trampoline3,
+        now: trampoline4,
+        'subscribe-duration': trampoline5,
       },
       'wasi:clocks/wall-clock@0.2.0': {
         now: exports0['6'],
@@ -3916,19 +3955,22 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
         '[method]descriptor.unlink-file-at': exports0['20'],
         '[method]descriptor.write': exports0['21'],
         '[method]directory-entry-stream.read-directory-entry': exports0['22'],
-        '[resource-drop]descriptor': trampoline7,
-        '[resource-drop]directory-entry-stream': trampoline8,
+        '[resource-drop]descriptor': trampoline9,
+        '[resource-drop]directory-entry-stream': trampoline10,
+      },
+      'wasi:io/poll@0.2.0': {
+        '[method]pollable.block': trampoline0,
       },
       'wasi:io/streams@0.2.0': {
         '[method]input-stream.blocking-read': exports0['3'],
         '[method]output-stream.blocking-flush': exports0['4'],
         '[method]output-stream.blocking-write-and-flush': exports0['5'],
-        '[resource-drop]input-stream': trampoline0,
-        '[resource-drop]output-stream': trampoline1,
+        '[resource-drop]input-stream': trampoline1,
+        '[resource-drop]output-stream': trampoline2,
       },
       'wasi:random/random@0.2.0': {
         'get-random-bytes': exports0['7'],
-        'get-random-u64': trampoline4,
+        'get-random-u64': trampoline6,
       },
     }));
     memory0 = exports1.memory;
@@ -3936,30 +3978,30 @@ export function instantiate(getCoreModule, imports, instantiateCore = WebAssembl
     ({ exports: exports2 } = yield instantiateCore(yield module2, {
       '': {
         $imports: exports0.$imports,
-        '0': trampoline9,
-        '1': trampoline10,
-        '10': trampoline19,
-        '11': trampoline20,
-        '12': trampoline21,
-        '13': trampoline22,
-        '14': trampoline23,
-        '15': trampoline24,
-        '16': trampoline25,
-        '17': trampoline26,
-        '18': trampoline27,
-        '19': trampoline28,
-        '2': trampoline11,
-        '20': trampoline29,
-        '21': trampoline30,
-        '22': trampoline31,
-        '23': trampoline32,
-        '3': trampoline12,
-        '4': trampoline13,
-        '5': trampoline14,
-        '6': trampoline15,
-        '7': trampoline16,
-        '8': trampoline17,
-        '9': trampoline18,
+        '0': trampoline11,
+        '1': trampoline12,
+        '10': trampoline21,
+        '11': trampoline22,
+        '12': trampoline23,
+        '13': trampoline24,
+        '14': trampoline25,
+        '15': trampoline26,
+        '16': trampoline27,
+        '17': trampoline28,
+        '18': trampoline29,
+        '19': trampoline30,
+        '2': trampoline13,
+        '20': trampoline31,
+        '21': trampoline32,
+        '22': trampoline33,
+        '23': trampoline34,
+        '3': trampoline14,
+        '4': trampoline15,
+        '5': trampoline16,
+        '6': trampoline17,
+        '7': trampoline18,
+        '8': trampoline19,
+        '9': trampoline20,
       },
     }));
     ({ exports: exports3 } = yield instantiateCore(yield module3, {
