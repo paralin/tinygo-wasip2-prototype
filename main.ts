@@ -119,55 +119,18 @@ async function run() {
 
   // Check if the browser supports required features
   if (!checkBrowserSupport()) {
-    // Update the status to show the error
-    updateStatus(
-      'Browser requirements not met. This application requires SharedArrayBuffer and Atomics, which are only available in secure contexts with cross-origin isolation. Please run the application using the provided server script: ./serve.bash',
-      'error',
-    )
     return
   }
 
   try {
-    // Update status to initializing
-    updateStatus('Initializing WebAssembly and JS workers...', 'info')
-
     // Initialize the workers
     const workers = await initWorkers()
     wasmWorker = workers.wasmWorker
     jsWorker = workers.jsWorker
 
     console.log('[main] Both workers initialized and connected')
-
-    // Update status to success
-    updateStatus(
-      'WebAssembly application is running with JS worker for communication. Check the console for output.',
-      'success',
-    )
   } catch (error) {
     console.error('[main] Failed to initialize:', error)
-
-    // Update status to error
-    updateStatus(`Failed to initialize: ${error.toString()}`, 'error')
-  }
-}
-
-// Function to update status display
-function updateStatus(message: string, type: string = 'info') {
-  const statusContainer = document.getElementById('status-container')
-  if (statusContainer) {
-    statusContainer.innerHTML = `<h2>Status</h2><p>${message}</p>`
-
-    // Remove all previous status classes
-    statusContainer.classList.remove('error', 'success', 'warning')
-
-    // Add appropriate class based on type
-    if (type === 'error') {
-      statusContainer.classList.add('error')
-    } else if (type === 'success') {
-      statusContainer.classList.add('success')
-    } else if (type === 'warning') {
-      statusContainer.classList.add('warning')
-    }
   }
 }
 

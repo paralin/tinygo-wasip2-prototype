@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</title>
+    <title>TinyGo WASI Preview2 Demo</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
@@ -16,52 +16,13 @@
         overflow: auto;
         max-height: 300px;
       }
-      .status {
-        margin: 20px 0;
-        padding: 10px;
-        background: #e6f7ff;
-        border: 1px solid #91d5ff;
-        border-radius: 4px;
-      }
-      .error {
-        background: #fff2f0;
-        border: 1px solid #ffccc7;
-      }
-      .success {
-        background: #f6ffed;
-        border: 1px solid #b7eb8f;
-      }
-      .warning {
-        background: #fffbe6;
-        border: 1px solid #ffe58f;
-      }
     </style>
   </head>
   <body>
-    <h1>TinyGo WASI Preview2 Demo with Simplified Atomics.wait Sleep</h1>
-
-    <div id="status-container" class="status">
-      <h2>Status</h2>
-      <p>Initializing application...</p>
-    </div>
+    <h1>TinyGo WASI Preview2 Demo</h1>
 
     <h2>Console Output</h2>
     <pre id="output"></pre>
-
-    <div id="about">
-      <h2>About This Demo</h2>
-      <p>
-        This demo shows how to implement synchronous blocking operations in
-        WebAssembly running in a browser.
-      </p>
-      <p>Key features:</p>
-      <ul>
-        <li>WebAssembly module compiled with TinyGo</li>
-        <li>WASI Preview2 interfaces implementation</li>
-        <li>WebWorker for running the WASM code</li>
-        <li>Simple Atomics.wait timeout for synchronous sleeping</li>
-      </ul>
-    </div>
 
     <script>
       // Capture console output and display it on page
