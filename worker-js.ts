@@ -9,7 +9,7 @@ let sharedBuffer: SharedArrayBuffer | null = null
 let messagePort: MessagePort | null = null
 
 // Set up message handler
-self.onmessage = (event) => {
+self.onmessage = (event: MessageEvent) => {
   const { sharedBuffer: buffer, port } = event.data
 
   if (buffer && port) {
@@ -29,7 +29,7 @@ self.onmessage = (event) => {
  * Handle messages from the WASM worker through the MessagePort
  */
 function handlePortMessage(event: MessageEvent) {
-  const { type, data } = event.data
+  const { type, data: _data } = event.data
 
   console.log(`[worker-js] Received message from WASM worker: ${type}`)
 
