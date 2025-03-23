@@ -2,30 +2,6 @@
 
 This repository contains a demonstration of running Go code in a browser using WebAssembly with WASI Preview2 support via TinyGo.
 
-As far as I can tell, what I want to do (implement the stdlib with async functions) would require modifying Tinygo. Currently a goroutine unwinds back to the scheduler by calling task.Pause(), which invokes tinygo_unwind and uses asyncify to return control to the scheduler but not to JavaScript. The scheduler then continues running other goroutines without ever returning control to the JavaScript environment. This means any Promises created during WebAssembly execution would never have a chance to resolve, as the JavaScript event loop can't process them while WebAssembly has control.
-
-To properly support async JavaScript functions, we would need to modify this behavior so that when an async function is called, the goroutine unwinds all the way back to JavaScript (not just to the scheduler), allowing the JavaScript event loop to run and process the Promise. Then we would need to call run() again to resume the scheduler.
-
-## Repository Contents
-
-- **main.go**: A simple Go program that outputs a greeting message
-- **build scripts**:
-  - `build-go.bash`: Compiles the Go code to WebAssembly using TinyGo
-  - `build-js.bash`: Transpiles the WASM module to JavaScript using JCO
-  - `build-browser.bash`: Bundles and serves the web application
-  - `serve.bash`: Main script that runs all build steps and serves the demo
-
-- **Web files**:
-  - `index.html`: Browser interface for the demo
-  - `main.ts`: TypeScript code that loads and runs the WASM module
-
-## Prerequisites
-
-- TinyGo
-- wasm-tools
-- @bytecodealliance/jco (Node.js package)
-- esbuild
-
 ## Running the Demo
 
 To build and run the demo, simply execute:
@@ -233,3 +209,47 @@ When the scheduler decides to run a goroutine (represented as a Task), it calls 
 When we call `start_unwind` in `task.Pause` the function call in `tinygo_rewind`
 returns, and we then call `stop_unwind` to finish the unwind operation, and
 return back to the scheduler, returning from `task.Resume`.
+
+## Next Steps
+
+Here is a summary of what we have determined so far:
+
+- Running with `GOOS=js` returns to JavaScript after each scheduler run.
+- Running with `GOOS=wasip2` runs a loop within Go and does not return to JavaScript.
+- wasip2 waits for events by creating one or more `Pollable` then calling `poll([pollables...])`
+- this depends on the imported `poll` function to **block** until one or more `Pollable` return
+
+We can use `Atomics.wait` to block the JavaScript thread, and pass a timeout for sleeping.
+
+The key issue is since we never return to the JavaScript event loop, we cannot
+register and consume event handlers, making implementing the stdlib difficult.
+
+The only apparent solution is to use two threads within two WebWorker:
+
+- **event thread**: manage JavaScript callbacks and notify `WebAssembly` via `Atomics.notify`
+- **WebAssembly thread**: run the main WebAssembly process and block with `Atomics.wait`
+
+`Atomics.wait` works on a `SharedArrayBuffer` that is shared between the two threads.
+
+We cannot use MessagePort or other communication primitives to talk between the
+workers, so instead we need to pass all data via the `SharedArrayBuffer`.
+
+Not all browsers support growing the buffer, so we must define a `MTU` (maximum
+transmission unit) up front and pack the data into that size in the SharedArrayBuffer.
+
+This loosely implements a packet queue with shared memory. On top of this packet
+queue we can use a typical ordered stream implementation like `yamux` to
+mitigate the limitations of the MTU and multiplex unlimited sized data.
+
+For optimization, we can queue packets, and transmit multiple at a time via the
+available SharedBufferArray space (batching).
+
+For transmitting data back from the WebAssembly thread to the event thread, we
+can use a typical MessagePort in a one-way configuration writing Uint8Array into
+the MessagePort as a packet queue back to the event thread.
+
+See the [blocking-io prototype] which demonstrates this approach with several
+other optimizations to achieve ~90MB/s transfer between the two workers.
+
+[blocking-io prototype]: https://github.com/paralin/blocking-worker-io-prototype
+
