@@ -6,8 +6,6 @@ As far as I can tell, what I want to do (implement the stdlib with async functio
 
 To properly support async JavaScript functions, we would need to modify this behavior so that when an async function is called, the goroutine unwinds all the way back to JavaScript (not just to the scheduler), allowing the JavaScript event loop to run and process the Promise. Then we would need to call run() again to resume the scheduler.
 
-I can see a way that this could be done by modifying the tinygo implementation, but probably not worth doing compared to just using the syscall/js old-fashioned wasm approach (not wasi), and waiting for JSPI support later this year.
-
 ## Repository Contents
 
 - **main.go**: A simple Go program that outputs a greeting message
