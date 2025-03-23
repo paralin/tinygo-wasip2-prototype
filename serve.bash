@@ -7,5 +7,8 @@ echo "Building Go WASM module..."
 echo "Transpiling WASM to JavaScript..."
 ./build-js.bash
 
-echo "Starting browser server..."
-exec ./build-browser.bash
+echo "Bundling for the browser..."
+./build-browser.bash
+
+echo "Starting server with COOP/COEP headers for cross-origin isolation..."
+exec node serve-with-headers.js

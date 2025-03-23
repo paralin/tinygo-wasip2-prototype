@@ -169,7 +169,6 @@ export class DirectoryEntryStream
 
   /**
    * Static factory method to create a DirectoryEntryStream
-   * Used to satisfy typechecking requirements for parameterless constructor
    */
   public static create(): DirectoryEntryStream {
     return new DirectoryEntryStream()
@@ -226,7 +225,6 @@ export class Descriptor implements wasip2Types.filesystem.types.Descriptor {
 
   /**
    * Static factory method to create a Descriptor
-   * Used to satisfy typechecking requirements for parameterless constructor
    */
   public static create(): Descriptor {
     // Create a root directory as default

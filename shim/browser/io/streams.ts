@@ -23,6 +23,7 @@ export class StreamClosedError
   constructor() {
     super('Stream is closed')
     this.name = 'StreamClosedError'
+    this.payload = {tag: this.tag, val: undefined}
   }
 }
 
