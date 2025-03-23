@@ -569,7 +569,6 @@ function filesystemErrorCode(
   if (err && typeof err === 'object' && 'payload' in err) {
     const payload = (err as any).payload
     if (typeof payload === 'string') {
-      // This is a simplification - in a real implementation we would validate the error code
       return payload as wasip2Types.filesystem.types.ErrorCode
     }
   }

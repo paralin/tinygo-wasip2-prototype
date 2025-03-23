@@ -3,5 +3,12 @@
     "@bytecodealliance/preview2-shim": "^0.17.2",
     "asyncify-wasm": "^1.2.1",
     "memfs": "^4.17.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  },
+  "scripts": {
+    "format": "prettier --write '**/*.{ts,js,json,md,yaml,yml}'",
+    "format:check": "prettier --check '**/*.{ts,js,json,md,yaml,yml}'"
   }
 }

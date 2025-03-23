@@ -105,24 +105,6 @@
         // Auto-scroll to bottom
         output.scrollTop = output.scrollHeight
       }
-
-      // Update status function that can be called from the main.ts
-      window.updateStatus = function (message, type = 'info') {
-        const statusContainer = document.getElementById('status-container')
-        statusContainer.innerHTML = `<h2>Status</h2><p>${message}</p>`
-
-        // Remove all previous status classes
-        statusContainer.classList.remove('error', 'success', 'warning')
-
-        // Add appropriate class based on type
-        if (type === 'error') {
-          statusContainer.classList.add('error')
-        } else if (type === 'success') {
-          statusContainer.classList.add('success')
-        } else if (type === 'warning') {
-          statusContainer.classList.add('warning')
-        }
-      }
     </script>
 
     <script type="module" src="dist/bundle.js"></script>

@@ -37,7 +37,7 @@ export class LastOperationFailedError
     super(`Last operation failed`)
     this.name = 'LastOperationFailedError'
     this.val = error
-    this.payload = {tag: this.tag, val: this.val}
+    this.payload = { tag: this.tag, val: this.val }
   }
 }
 

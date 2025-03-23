@@ -42,5 +42,6 @@ build_bundle() {
 # Build the main bundle
 build_bundle main.ts bundle.js
 
-# Build the worker bundle
-build_bundle worker.ts worker.js
+# Build the worker bundles
+build_bundle worker-wasm.ts worker-wasm.js
+build_bundle worker-js.ts worker-js.js

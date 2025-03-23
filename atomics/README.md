@@ -24,12 +24,13 @@ To implement this solution, we need:
 
 Our implementation uses a two-thread model:
 
-1. **Main Thread**: 
+1. **Main Thread**:
+
    - Handles the UI and user interaction
    - Processes asynchronous operations requested by the worker
    - Notifies the worker when operations complete
 
-2. **WASM Worker**: 
+2. **WASM Worker**:
    - Runs the TinyGo WASM module
    - Implements WASI Preview2 interfaces
    - Uses Atomics.wait for synchronous blocking
@@ -73,4 +74,3 @@ This architecture can be extended to support other blocking operations:
 - Other blocking system calls
 
 Each operation type would follow the same pattern of creating a Pollable, using SharedArrayBuffer with Atomics.wait, and having the main thread handle the asynchronous operation while the worker blocks synchronously.
-

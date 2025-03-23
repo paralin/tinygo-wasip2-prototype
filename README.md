@@ -11,12 +11,26 @@ To build and run the demo, simply execute:
 ```
 
 This will:
+
 1. Compile the Go code to WebAssembly
 2. Transpile the WASM module to JavaScript
 3. Bundle the web application
 4. Start a local server (typically on port 8000)
 
 Open your browser to the displayed URL to see the demo in action.
+
+## Overview of Files
+
+| File                    | Description                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| `build-go.bash`         | Compiles Go code to WebAssembly using TinyGo with asyncify scheduler                 |
+| `build-js.bash`         | Transpiles the WASM binary to JavaScript using JCO and fixes Node.js imports         |
+| `build-browser.bash`    | Bundles the JavaScript code using esbuild for browser compatibility                  |
+| `serve.bash`            | Runs all build scripts and starts a server with cross-origin isolation headers       |
+| `worker-wasm.ts`        | WebWorker that loads and runs the WebAssembly module                                 |
+| `worker-js.ts`          | WebWorker that handles JavaScript events and async operations                        |
+| `main.ts`               | Main browser thread that initializes both workers with shared communication channels |
+| `shim/browser/index.ts` | Implementation of WASI Preview2 interfaces for the browser environment               |
 
 ## How It Works
 
@@ -172,6 +186,7 @@ The `scheduler` has the following general loop, while the program has not exited
 - Call Resume on the Task.
 
 When a goroutine needs to yield control (e.g., mutex lock, channel operation, sleep) it calls `Task.Pause()`:
+
 1. Check for stack overflow by verifying the stack canary value.
 2. Call `currentTask.state.unwind()` which invokes `tinygo_unwind` in assembly
 3. `tinygo_unwind` performs these steps:
@@ -186,6 +201,7 @@ When a goroutine needs to yield control (e.g., mutex lock, channel operation, sl
 When the scheduler decides to run a goroutine (represented as a Task), it calls `Task.Resume()`:
 
 1. If the task has never run before (`!t.state.launched`):
+
    - Calls `t.state.launch()` which invokes `tinygo_launch` in assembly
    - `tinygo_launch` performs these steps:
      - Switches to the goroutine's stack by setting `__stack_pointer`
@@ -252,4 +268,3 @@ See the [blocking-io prototype] which demonstrates this approach with several
 other optimizations to achieve ~90MB/s transfer between the two workers.
 
 [blocking-io prototype]: https://github.com/paralin/blocking-worker-io-prototype
-

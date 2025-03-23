@@ -1,12 +1,6 @@
-// Declare updateStatus on window
-declare global {
-  interface Window {
-    updateStatus: (message: string, type?: string) => void
-  }
-}
-
-// Worker reference
+// Worker references
 let wasmWorker: Worker | null = null
+let jsWorker: Worker | null = null
 
 // Check if the browser supports required features
 function checkBrowserSupport() {
@@ -33,38 +27,90 @@ function checkBrowserSupport() {
   return true
 }
 
-// Create and initialize the WebWorker
-function initWorker() {
-  return new Promise<Worker>((resolve, reject) => {
-    // Use absolute path to ensure correct loading
-    const workerUrl = new URL('/dist/worker.js', window.location.origin).href
-    console.log(`[main] Loading worker from: ${workerUrl}`)
-    const worker = new Worker(workerUrl, { type: 'module' })
+// Create and initialize the WebWorkers
+async function initWorkers() {
+  // Create a SharedArrayBuffer for communication between workers
+  const sharedBuffer = new SharedArrayBuffer(1024 * 1024) // 1MB buffer
 
-    worker.onmessage = (event) => {
-      const { type, error } = event.data
+  // Create a MessageChannel for communication
+  const channel = new MessageChannel()
 
-      console.log('[main] Received message from worker:', type)
+  // Return promise that resolves when both workers are ready
+  return new Promise<{ wasmWorker: Worker; jsWorker: Worker }>(
+    (resolve, reject) => {
+      let wasmWorkerReady = false
+      let jsWorkerReady = false
 
-      if (type === 'initialized') {
-        console.log('[main] Worker initialized')
-        worker.postMessage({ type: 'init' })
-      } else if (type === 'ready') {
-        console.log('[main] Worker ready with WebAssembly module loaded')
-        resolve(worker)
-      } else if (type === 'error') {
-        console.error('[main] Worker error:', error)
-        reject(new Error(error))
-      } else {
-        console.log('[main] Message from worker:', event.data)
+      // Initialize WASM worker
+      const wasmWorkerUrl = new URL(
+        '/dist/worker-wasm.js',
+        window.location.origin,
+      ).href
+      console.log(`[main] Loading WASM worker from: ${wasmWorkerUrl}`)
+      const wasmWorker = new Worker(wasmWorkerUrl, { type: 'module' })
+
+      // Initialize JS worker
+      const jsWorkerUrl = new URL('/dist/worker-js.js', window.location.origin)
+        .href
+      console.log(`[main] Loading JS worker from: ${jsWorkerUrl}`)
+      const jsWorker = new Worker(jsWorkerUrl, { type: 'module' })
+
+      // Handle messages from WASM worker
+      wasmWorker.onmessage = (event) => {
+        const { type } = event.data
+        console.log('[main] Received message from WASM worker:', type)
+
+        if (type === 'ready') {
+          console.log('[main] WASM worker ready with WebAssembly module loaded')
+          wasmWorkerReady = true
+          if (jsWorkerReady) {
+            resolve({ wasmWorker, jsWorker })
+          }
+        } else if (type === 'error') {
+          console.error('[main] WASM worker error:', event.data.error)
+          reject(new Error(event.data.error))
+        }
       }
-    }
 
-    worker.onerror = (error) => {
-      console.error('[main] Worker initialization error:', error)
-      reject(error)
-    }
-  })
+      // Handle messages from JS worker
+      jsWorker.onmessage = (event) => {
+        const { type } = event.data
+        console.log('[main] Received message from JS worker:', type)
+
+        if (type === 'js-ready') {
+          console.log('[main] JS worker ready')
+          jsWorkerReady = true
+          if (wasmWorkerReady) {
+            resolve({ wasmWorker, jsWorker })
+          }
+        } else if (type === 'error') {
+          console.error('[main] JS worker error:', event.data.error)
+          reject(new Error(event.data.error))
+        }
+      }
+
+      // Handle errors
+      wasmWorker.onerror = (error) => {
+        console.error('[main] WASM worker initialization error:', error)
+        reject(error)
+      }
+
+      jsWorker.onerror = (error) => {
+        console.error('[main] JS worker initialization error:', error)
+        reject(error)
+      }
+
+      // Send initialization data to workers immediately
+      console.log('[main] Sending initialization data to workers')
+      wasmWorker.postMessage({ sharedBuffer, port: channel.port2 }, [
+        channel.port2,
+      ])
+
+      jsWorker.postMessage({ sharedBuffer, port: channel.port1 }, [
+        channel.port1,
+      ])
+    },
+  )
 }
 
 // Main function to initialize and run the application
@@ -74,38 +120,53 @@ async function run() {
   // Check if the browser supports required features
   if (!checkBrowserSupport()) {
     // Update the status to show the error
-    if (typeof window.updateStatus === 'function') {
-      window.updateStatus(
-        'Browser requirements not met. This application requires SharedArrayBuffer and Atomics, which are only available in secure contexts with cross-origin isolation. Please run the application using the provided server script: ./serve.bash',
-        'error',
-      )
-    }
+    updateStatus(
+      'Browser requirements not met. This application requires SharedArrayBuffer and Atomics, which are only available in secure contexts with cross-origin isolation. Please run the application using the provided server script: ./serve.bash',
+      'error',
+    )
     return
   }
 
   try {
     // Update status to initializing
-    if (typeof window.updateStatus === 'function') {
-      window.updateStatus('Initializing WebAssembly worker...', 'info')
-    }
+    updateStatus('Initializing WebAssembly and JS workers...', 'info')
 
-    // Initialize the worker
-    wasmWorker = await initWorker()
-    console.log('[main] WebAssembly application is now running in a worker')
+    // Initialize the workers
+    const workers = await initWorkers()
+    wasmWorker = workers.wasmWorker
+    jsWorker = workers.jsWorker
+
+    console.log('[main] Both workers initialized and connected')
 
     // Update status to success
-    if (typeof window.updateStatus === 'function') {
-      window.updateStatus(
-        'WebAssembly application is running in a Web Worker. Check the console for output.',
-        'success',
-      )
-    }
+    updateStatus(
+      'WebAssembly application is running with JS worker for communication. Check the console for output.',
+      'success',
+    )
   } catch (error) {
     console.error('[main] Failed to initialize:', error)
 
     // Update status to error
-    if (typeof window.updateStatus === 'function') {
-      window.updateStatus(`Failed to initialize: ${error.toString()}`, 'error')
+    updateStatus(`Failed to initialize: ${error.toString()}`, 'error')
+  }
+}
+
+// Function to update status display
+function updateStatus(message: string, type: string = 'info') {
+  const statusContainer = document.getElementById('status-container')
+  if (statusContainer) {
+    statusContainer.innerHTML = `<h2>Status</h2><p>${message}</p>`
+
+    // Remove all previous status classes
+    statusContainer.classList.remove('error', 'success', 'warning')
+
+    // Add appropriate class based on type
+    if (type === 'error') {
+      statusContainer.classList.add('error')
+    } else if (type === 'success') {
+      statusContainer.classList.add('success')
+    } else if (type === 'warning') {
+      statusContainer.classList.add('warning')
     }
   }
 }

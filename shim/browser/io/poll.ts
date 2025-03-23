@@ -3,7 +3,12 @@
  */
 
 import type * as wasip2Types from '../../types/index.js'
-import { InputStream, InputStreamHandler, OutputStream, OutputStreamHandler } from './streams.js'
+import {
+  InputStream,
+  InputStreamHandler,
+  OutputStream,
+  OutputStreamHandler,
+} from './streams.js'
 
 /**
  * Global dummy SharedArrayBuffer for Atomics.wait operations
@@ -118,7 +123,7 @@ export function createOutputStream(handler: OutputStreamHandler): OutputStream {
  * @returns True if the object has a ready function
  */
 function isPollable(obj: any): obj is Pollable {
-  return obj && (obj instanceof Pollable || typeof obj.ready === 'function');
+  return obj && (obj instanceof Pollable || typeof obj.ready === 'function')
 }
 
 /**
